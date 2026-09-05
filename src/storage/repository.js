@@ -3,6 +3,20 @@ import { tableClient, blobServiceClient } from './clients.js';
 import { tableNames, config } from '../config.js';
 
 const clients = new Map();
+const readCache = new Map();
+const cacheTtlByTable = new Map([
+  [tableNames.settings, 5*60*1000],
+  [tableNames.services, 5*60*1000],
+  [tableNames.ministries, 5*60*1000],
+  [tableNames.templates, 5*60*1000],
+  [tableNames.songs, 10*60*1000],
+  [tableNames.members, 60*1000]
+]);
+function clone(value){ return value==null?value:structuredClone(value); }
+function cacheKey(kind,table,churchId,suffix=''){ return `${kind}|${table}|${churchId}|${suffix}`; }
+function cached(table,key){ const ttl=cacheTtlByTable.get(table); if(!ttl)return undefined; const hit=readCache.get(key); if(!hit||hit.expiresAt<=Date.now()){ if(hit)readCache.delete(key); return undefined; } return clone(hit.value); }
+function remember(table,key,value){ const ttl=cacheTtlByTable.get(table); if(ttl)readCache.set(key,{value:clone(value),expiresAt:Date.now()+ttl}); return value; }
+function invalidateTableCache(table,churchId){ const marker=`|${table}|${churchId}|`; for(const key of readCache.keys())if(key.includes(marker))readCache.delete(key); }
 function client(name){
   if (!clients.has(name)) clients.set(name, tableClient(name));
   return clients.get(name);
@@ -38,27 +52,33 @@ export async function ensureStorage(){
 }
 
 export async function getDoc(table, churchId, id){
-  try { return docFromEntity(await client(table).getEntity(churchId, normalizeRowKey(id))); }
+  const key=cacheKey('get',table,churchId,normalizeRowKey(id));
+  const hit=cached(table,key); if(hit!==undefined)return hit;
+  try { return remember(table,key,docFromEntity(await client(table).getEntity(churchId, normalizeRowKey(id)))); }
   catch (e) { if (e.statusCode === 404) return null; throw e; }
 }
 
 export async function putDoc(table, churchId, id, doc, indexes={}){
   const entity = entityFromDoc(churchId, id, doc, indexes);
   await client(table).upsertEntity(entity, 'Replace');
+  invalidateTableCache(table,churchId);
   return doc;
 }
 
 export async function createDoc(table, churchId, id, doc, indexes={}){
   await client(table).createEntity(entityFromDoc(churchId, id, doc, indexes));
+  invalidateTableCache(table,churchId);
   return doc;
 }
 
 export async function deleteDoc(table, churchId, id){
-  try { await client(table).deleteEntity(churchId, normalizeRowKey(id)); return true; }
+  try { await client(table).deleteEntity(churchId, normalizeRowKey(id)); invalidateTableCache(table,churchId); return true; }
   catch (e) { if (e.statusCode === 404) return false; throw e; }
 }
 
 export async function listDocs(table, churchId, {filter='', max=1000}={}){
+  const key=cacheKey('list',table,churchId,`${filter}|${max}`);
+  const hit=cached(table,key); if(hit!==undefined)return hit;
   const base = `PartitionKey eq '${q(churchId)}'`;
   const fullFilter = filter ? `${base} and ${filter}` : base;
   const out=[];
@@ -66,7 +86,8 @@ export async function listDocs(table, churchId, {filter='', max=1000}={}){
     out.push(docFromEntity(entity));
     if (out.length >= max) break;
   }
-  return out;
+  remember(table,key,out);
+  return clone(out);
 }
 
 export async function uploadBuffer(containerName, blobName, buffer, contentType='application/octet-stream'){

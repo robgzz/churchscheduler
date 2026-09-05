@@ -32,10 +32,10 @@ param initialJobImage string = 'mcr.microsoft.com/k8se/quickstart-jobs:latest'
 @maxValue(2)
 param minReplicas int = 0
 
-@description('Maximum web replicas. Two is plenty for a small/medium church and keeps cost bounded.')
+@description('Maximum web replicas. Four provides inexpensive burst headroom for 200+ members while still scaling down when idle.')
 @minValue(1)
 @maxValue(10)
-param maxReplicas int = 2
+param maxReplicas int = 4
 
 @description('Scheduler job cron in UTC. Default runs every 15 minutes.')
 param schedulerCron string = '*/15 * * * *'

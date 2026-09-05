@@ -84,7 +84,7 @@ $o = $d.properties.outputs
 $acr = $o.containerRegistryName.value
 $app = $o.containerAppName.value
 $job = $o.schedulerJobName.value
-$tag = "v2.1.0-$(Get-Date -Format yyyyMMddHHmmss)"
+$tag = "v2.2.0-$(Get-Date -Format yyyyMMddHHmmss)"
 $image = "$($o.containerRegistryLoginServer.value)/church-scheduler-v2:$tag"
 
 Write-Host "Building application image $tag in Azure Container Registry..." -ForegroundColor Cyan

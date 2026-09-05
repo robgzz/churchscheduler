@@ -168,3 +168,21 @@ V2.1.0 keeps the V2.1.0 Songs UI and improves `scripts/first-deploy.ps1` so the 
 - V2.1 seed migration upgrades existing Azure V2 data in place to bilingual labels and branding without deleting members, schedules, history, or songs.
 
 Automated Azure Communication Services SMS/email notifications are **not** enabled in V2.1; the SMS capability above is user-initiated program sharing through the phone's messaging app.
+
+## V2.2 mobile UX and performance update
+
+V2.2 keeps the existing Vanilla JS PWA and Azure data model while improving clarity and burst performance:
+
+- A warmer, more modern mobile visual system driven by each church's configured accent color.
+- Large month/day tiles on member assignments and program cards so the service date is difficult to miss.
+- Worship-member assignment cards explicitly call out **Your assignment / Tu asignación**. Cantos assignments receive a distinct music treatment and clearly show whether song selections are still needed.
+- The Cantos picker is now a full-height mobile picker: only the song list scrolls. Search, All/Selected filters, selected count, Cancel and Save remain reachable at all times.
+- Short-lived browser caching avoids duplicate assignment/program requests while moving between Home and Schedule.
+- Server-side in-memory read-through caching reduces repeated Azure Table reads for church settings, services, ministries, templates, songs and member profiles; writes invalidate the relevant table cache.
+- HTTP compression is enabled for larger API/static responses.
+- The PWA shell uses cache-first refresh for static assets and network-first navigation so repeat opens feel faster while deployments still refresh the cache version.
+- Bicep's default Container Apps burst ceiling is increased from 2 to 4 replicas. `minReplicas` remains 0 by default for low idle cost.
+
+The expected church size of 200+ members remains modest for this architecture. The optimization focus is short usage bursts around service times rather than high continuous traffic.
+
+Azure Communication Services automated SMS/email is still intentionally **not provisioned in V2.2**. Native Share, WhatsApp, and user-initiated SMS sharing remain available.
