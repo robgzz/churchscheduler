@@ -12,8 +12,19 @@ publicRouter.get('/bootstrap',async(req,res)=>{
   const canSeeNews=groups.includes('members') || groups.includes('worship') || req.identity?.user?.adminAccess===true || req.identity?.user?.churchAdministrator===true;
   const allowedKinds=canSeeNews ? ['announcement','bulletin'] : ['bulletin'];
   const visible=content.filter(x=>x.published!==false && allowedKinds.includes(x.kind)).sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt)));
-  res.json({church,services:services.filter(s=>s.active!==false),content:visible});
+  const churchView=church?{...church,logoUrl:church.logo?.blobName?`/api/public/church-logo?v=${encodeURIComponent(church.updatedAt||church.logo.blobName)}`:(church.logoUrl||'/assets/church-logo.png')}:church;
+  res.json({church:churchView,services:services.filter(s=>s.active!==false),content:visible});
 });
+
+publicRouter.get('/church-logo',async(req,res)=>{
+  const church=await getDoc(tableNames.settings,req.churchId,'church');
+  if(church?.logo?.blobName){
+    const f=await downloadBuffer(config.attachmentsContainer,church.logo.blobName);
+    res.type(f.contentType); res.setHeader('Cache-Control','public, max-age=300'); return res.send(f.buffer);
+  }
+  res.redirect(church?.logoUrl||'/assets/church-logo.png');
+});
+
 publicRouter.post('/visitor-contact',async(req,res)=>{
   const id=`visitor_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`;
   const doc={id,kind:'visitor_contact',fullName:String(req.body.fullName||'').trim(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),address:String(req.body.address||'').trim(),firstVisit:req.body.firstVisit===true,prayerRequest:String(req.body.prayerRequest||'').trim(),interests:Array.isArray(req.body.interests)?req.body.interests:[],createdAt:nowIso(),status:'new'};

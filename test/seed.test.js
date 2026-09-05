@@ -6,6 +6,8 @@ const root=new URL('../seed/westbury/',import.meta.url);
 const members=JSON.parse(fs.readFileSync(new URL('members.json',root),'utf8'));
 const services=JSON.parse(fs.readFileSync(new URL('services.json',root),'utf8'));
 const templates=JSON.parse(fs.readFileSync(new URL('templates.json',root),'utf8'));
+const ministries=JSON.parse(fs.readFileSync(new URL('ministries.json',root),'utf8'));
+const church=JSON.parse(fs.readFileSync(new URL('church.json',root),'utf8'));
 const songSeed=JSON.parse(fs.readFileSync(new URL('songs.json',root),'utf8'));
 
 test('Westbury seed has canonical service times',()=>{
@@ -39,4 +41,12 @@ test('Westbury song library is migrated and normalized',()=>{
   assert.equal(splitTitle.number,'5');
   assert.equal(splitTitle.title,'Oh, Bondad Tan Infinita!');
   assert.ok(splitTitle.legacySource);
+});
+
+
+test('Westbury seed includes bilingual service, ministry, and template labels',()=>{
+  assert.ok(services.every(s=>s.labelEn && s.labelEs));
+  assert.ok(ministries.every(m=>m.labelEn && m.labelEs));
+  assert.ok(templates.every(t=>(t.items||[]).every(i=>i.labelEn && i.labelEs)));
+  assert.equal(church.logoUrl,'/assets/church-logo.png');
 });

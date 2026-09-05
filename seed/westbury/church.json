@@ -17,5 +17,8 @@
     },
     "currentWeekReplacementPoints": 2,
     "currentWeekReplacementCap": 8
-  }
+  },
+  "churchNameEn": "Westbury Church of Christ",
+  "churchNameEs": "Westbury Church of Christ",
+  "logoUrl": "/assets/church-logo.png"
 }

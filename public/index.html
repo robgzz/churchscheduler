@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -14,12 +14,20 @@
 <body>
   <div id="app" class="app-shell">
     <header class="app-header">
-      <div><div class="eyebrow" id="church-name">Church</div><h1 id="page-title">Home</h1></div>
-      <button class="icon-btn hidden" id="logout-btn" aria-label="Sign out">↪</button>
+      <div class="header-brand">
+        <img id="header-logo" class="header-logo" src="/assets/church-logo.png" alt="">
+        <div><div class="eyebrow" id="church-name">Church</div><h1 id="page-title">Inicio</h1></div>
+      </div>
+      <div class="header-actions">
+        <button class="mini-control" id="language-btn" aria-label="Language">ES</button>
+        <button class="icon-btn compact" id="theme-btn" aria-label="Theme">◐</button>
+        <button class="icon-btn compact hidden" id="logout-btn" aria-label="Sign out">↪</button>
+      </div>
     </header>
     <main id="main" class="main"></main>
     <nav id="bottom-nav" class="bottom-nav hidden"></nav>
   </div>
+  <div id="modal-root"></div>
   <div id="toast" class="toast hidden"></div>
   <script type="module" src="/assets/app.js"></script>
 </body>

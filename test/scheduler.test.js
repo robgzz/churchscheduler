@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { threeWeekWindow, startOfWeek, occurrenceDates, isSameWeek } from '../src/scheduler/dates.js';
-import { assignmentUnits } from '../src/scheduler/template.js';
+import { assignmentUnits, renderProgramItems } from '../src/scheduler/template.js';
 import { hardEligible, replacementPenaltyEligible } from '../src/scheduler/policy.js';
 import { calculateFairness, rankCandidates, DEFAULT_WEIGHTS } from '../src/scheduler/fairness.js';
 
@@ -69,4 +69,15 @@ test('ranking is deterministic on ties', () => {
   const ctx={ministryId:'x',today:'2026-09-05',completedCounts:{},futureCounts:{},lastServedByMember:{},replacementCounts:{},weights:DEFAULT_WEIGHTS};
   const ranked=rankCandidates([a,b],ctx);
   assert.equal(ranked[0].member.fullName,'Antonio');
+});
+
+
+test('rendered program items include song selections from assignment', () => {
+  const tpl={items:[{id:'songs',label:'Cantos',labelEs:'Cantos',labelEn:'Songs',ministryId:'ministry_songs',assignmentKeys:['songs_a']}]};
+  const assignments={songs_a:{id:'a1',assignmentKey:'songs_a',currentMemberId:'m1',status:'scheduled',ministryId:'ministry_songs',songIds:['s1','s2']}};
+  const members=new Map([['m1',{id:'m1',fullName:'Juan'}]]);
+  const songs=new Map([['s1',{id:'s1',number:'1',titleEs:'Uno'}],['s2',{id:'s2',number:'2',titleEs:'Dos'}]]);
+  const items=renderProgramItems(tpl,assignments,members,songs);
+  assert.equal(items[0].assignees[0].songs.length,2);
+  assert.equal(items[0].assignees[0].songs[1].number,'2');
 });

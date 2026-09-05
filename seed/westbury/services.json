@@ -1,14 +1,41 @@
 [
   {
-    "id":"svc_sunday_class","label":"Sunday Class","labelEs":"Clase Dominical","active":true,
-    "startTime":"09:30","recurrence":{"frequency":"weekly","weekday":0},"templateId":"tpl_sunday_class"
+    "id": "svc_sunday_class",
+    "label": "Sunday Class",
+    "labelEs": "Clase Dominical",
+    "active": true,
+    "startTime": "09:30",
+    "recurrence": {
+      "frequency": "weekly",
+      "weekday": 0
+    },
+    "templateId": "tpl_sunday_class",
+    "labelEn": "Sunday Class"
   },
   {
-    "id":"svc_sunday_worship","label":"Sunday Worship","labelEs":"Servicio de Adoración","active":true,
-    "startTime":"11:00","recurrence":{"frequency":"weekly","weekday":0},"templateId":"tpl_sunday_worship"
+    "id": "svc_sunday_worship",
+    "label": "Sunday Worship",
+    "labelEs": "Servicio de Adoración",
+    "active": true,
+    "startTime": "11:00",
+    "recurrence": {
+      "frequency": "weekly",
+      "weekday": 0
+    },
+    "templateId": "tpl_sunday_worship",
+    "labelEn": "Sunday Worship"
   },
   {
-    "id":"svc_wednesday_class","label":"Wednesday Class","labelEs":"Clase del Miércoles","active":true,
-    "startTime":"19:00","recurrence":{"frequency":"weekly","weekday":3},"templateId":"tpl_wednesday_class"
+    "id": "svc_wednesday_class",
+    "label": "Wednesday Class",
+    "labelEs": "Clase del Miércoles",
+    "active": true,
+    "startTime": "19:00",
+    "recurrence": {
+      "frequency": "weekly",
+      "weekday": 3
+    },
+    "templateId": "tpl_wednesday_class",
+    "labelEn": "Wednesday Class"
   }
 ]

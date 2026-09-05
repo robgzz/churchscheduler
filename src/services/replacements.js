@@ -17,6 +17,9 @@ export async function requestReplacement(churchId,memberId,assignmentId,{reason=
   const replacement={ requestedAt:nowIso(),requestedBy:memberId,reason,penaltyEligible,replacementMemberId:selected?.id || null };
   assignment.replacements=[...(assignment.replacements||[]),replacement];
   assignment.currentMemberId=selected?.id || null;
+  assignment.songIds=[];
+  assignment.songsUpdatedAt=null;
+  assignment.songsUpdatedBy=null;
   assignment.status=selected?'scheduled':'unfilled';
   assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:assignment.currentMemberId||'',ministryId:assignment.ministryId,programId:assignment.programId});

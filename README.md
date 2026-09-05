@@ -150,10 +150,21 @@ See:
 
 The API/data architecture is designed so those can be added later.
 
-### V2.0.2 UI note
+### V2.1.0 UI note
 
 The Admin **Content** area now includes a dedicated **Songs** tab with search, add, edit, and active/inactive management for the migrated hymn library. This release does not require any Azure infrastructure changes.
 
-### V2.0.3 redeploy note
+### V2.1.0 redeploy note
 
-V2.0.3 keeps the V2.0.2 Songs UI and improves `scripts/first-deploy.ps1` so the same first-deploy command can be safely rerun for application updates. It builds a uniquely tagged container image and avoids temporarily resetting an existing app/job to the placeholder images during Bicep reconciliation.
+V2.1.0 keeps the V2.1.0 Songs UI and improves `scripts/first-deploy.ps1` so the same first-deploy command can be safely rerun for application updates. It builds a uniquely tagged container image and avoids temporarily resetting an existing app/job to the placeholder images during Bicep reconciliation.
+
+## V2.1 mobile experience updates
+
+- Full English/Spanish UI with a one-tap language switch in both member and Admin experiences.
+- Light/Dark theme button in the header plus System/Light/Dark preferences in Profile.
+- Cantos volunteers can select multiple hymns from the church song library for each assigned Cantos unit; saved selections appear in the live program immediately.
+- Church branding is data-driven. Admins can set the church name, upload a logo to Azure Blob Storage, and choose an accent color. Westbury is seeded with the supplied Westbury Church of Christ logo.
+- Any signed-in church member can view the generated program and share it with native mobile sharing, WhatsApp, or SMS text.
+- V2.1 seed migration upgrades existing Azure V2 data in place to bilingual labels and branding without deleting members, schedules, history, or songs.
+
+Automated Azure Communication Services SMS/email notifications are **not** enabled in V2.1; the SMS capability above is user-initiated program sharing through the phone's messaging app.

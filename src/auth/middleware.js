@@ -18,26 +18,36 @@ export async function attachIdentity(req, res, next){
 }
 
 export function requireLogin(req, res, next){
-  if (!req.identity) return res.status(401).json({ error:'Authentication required' });
+  if (!req.identity) return res.status(401).json({ error:'Authentication required',code:'AUTH_REQUIRED' });
   next();
 }
 export function requireGroup(group){
   return (req,res,next) => {
-    if (!req.identity) return res.status(401).json({error:'Authentication required'});
+    if (!req.identity) return res.status(401).json({error:'Authentication required',code:'AUTH_REQUIRED'});
     const groups = req.identity.member?.groups || req.identity.user?.groups || [];
-    if (!groups.includes(group)) return res.status(403).json({error:'Access denied'});
+    if (!groups.includes(group)) return res.status(403).json({error:'Access denied',code:'ACCESS_DENIED'});
     next();
   };
 }
+
+export function requireAnyGroup(...allowedGroups){
+  return (req,res,next) => {
+    if (!req.identity) return res.status(401).json({error:'Authentication required',code:'AUTH_REQUIRED'});
+    const groups = req.identity.member?.groups || req.identity.user?.groups || [];
+    if (!allowedGroups.some(group=>groups.includes(group))) return res.status(403).json({error:'Access denied',code:'ACCESS_DENIED'});
+    next();
+  };
+}
+
 export function requireAdmin(req,res,next){
-  if (!req.identity) return res.status(401).json({error:'Authentication required'});
+  if (!req.identity) return res.status(401).json({error:'Authentication required',code:'AUTH_REQUIRED'});
   const allowed = req.identity.member?.adminAccess === true || req.identity.user?.adminAccess === true || req.identity.user?.churchAdministrator === true;
-  if (!allowed) return res.status(403).json({error:'Admin access required'});
+  if (!allowed) return res.status(403).json({error:'Admin access required',code:'ADMIN_REQUIRED'});
   next();
 }
 export function requireOwner(req,res,next){
-  if (!req.identity) return res.status(401).json({error:'Authentication required'});
+  if (!req.identity) return res.status(401).json({error:'Authentication required',code:'AUTH_REQUIRED'});
   const allowed = req.identity.member?.churchAdministrator === true || req.identity.user?.churchAdministrator === true;
-  if (!allowed) return res.status(403).json({error:'Church Administrator access required'});
+  if (!allowed) return res.status(403).json({error:'Church Administrator access required',code:'OWNER_REQUIRED'});
   next();
 }

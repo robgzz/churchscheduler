@@ -7,6 +7,7 @@ import { config } from './config.js';
 import { ensureStorage } from './storage/repository.js';
 import { seedIfNeeded } from './services/seed.js';
 import { attachIdentity } from './auth/middleware.js';
+import { localizationMiddleware, localizeError } from './i18n.js';
 import { setupRouter } from './routes/setup.js';
 import { authRouter } from './routes/auth.js';
 import { publicRouter } from './routes/public.js';
@@ -19,8 +20,9 @@ app.set('trust proxy',1);
 app.use(helmet({ contentSecurityPolicy:false, crossOriginEmbedderPolicy:false }));
 app.use(express.json({limit:'12mb'}));
 app.use(cookieParser());
+app.use(localizationMiddleware);
 app.use(attachIdentity);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'2.0.3'}));
+app.get('/healthz',(req,res)=>res.json({ok:true,version:'2.1.0'}));
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);
@@ -40,7 +42,7 @@ app.use((req,res,next)=>{
 app.use((err,req,res,next)=>{
   console.error(err);
   if(res.headersSent) return next(err);
-  res.status(err.statusCode||500).json({error:err.message||'Server error'});
+  res.status(err.statusCode||500).json({error:localizeError(err.message||'Server error',req.locale)});
 });
 
 await ensureStorage();

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -11,9 +11,15 @@
 <body>
   <div class="app-shell admin-shell">
     <header class="app-header">
-      <button class="icon-btn" onclick="location.href='/'" aria-label="Back">‹</button>
-      <div class="header-center"><div class="eyebrow">Church App</div><h1 id="admin-title">Admin</h1></div>
-      <span class="icon-btn ghost"></span>
+      <button class="icon-btn compact" onclick="location.href='/'" aria-label="Back">‹</button>
+      <div class="header-brand admin-brand">
+        <img id="admin-logo" class="header-logo" src="/assets/church-logo.png" alt="">
+        <div class="header-center"><div class="eyebrow" id="admin-church-name">Church</div><h1 id="admin-title">Administración</h1></div>
+      </div>
+      <div class="header-actions">
+        <button class="mini-control" id="admin-language-btn" aria-label="Language">ES</button>
+        <button class="icon-btn compact" id="admin-theme-btn" aria-label="Theme">◐</button>
+      </div>
     </header>
     <main id="admin-main" class="main"></main>
     <nav id="admin-nav" class="bottom-nav"></nav>

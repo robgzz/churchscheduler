@@ -1,12 +1,78 @@
 [
-  {"id":"ministry_preside","label":"Bienvenida y Oración","active":true},
-  {"id":"ministry_songs","label":"Cantos","active":true},
-  {"id":"ministry_scripture_prayer","label":"Lectura y Oración","active":true},
-  {"id":"ministry_meditation","label":"Meditación","active":true,"legacyAliases":["Sermón"]},
-  {"id":"ministry_class_teacher","label":"Clase","active":true},
-  {"id":"ministry_pastoral_prayer","label":"Peticiones","active":true,"legacyAliases":["Oración Pastoral"]},
-  {"id":"ministry_communion_offering","label":"Cena y Ofrenda","active":true},
-  {"id":"ministry_closing_announcements","label":"Oración final y anuncios","active":true},
-  {"id":"ministry_closing_prayer","label":"Oración final","active":true},
-  {"id":"ministry_vigilancia","label":"Vigilancia","active":true}
+  {
+    "id": "ministry_preside",
+    "label": "Bienvenida y Oración",
+    "active": true,
+    "labelEn": "Welcome and Prayer",
+    "labelEs": "Bienvenida y Oración"
+  },
+  {
+    "id": "ministry_songs",
+    "label": "Cantos",
+    "active": true,
+    "labelEn": "Songs",
+    "labelEs": "Cantos"
+  },
+  {
+    "id": "ministry_scripture_prayer",
+    "label": "Lectura y Oración",
+    "active": true,
+    "labelEn": "Scripture Reading and Prayer",
+    "labelEs": "Lectura y Oración"
+  },
+  {
+    "id": "ministry_meditation",
+    "label": "Meditación",
+    "active": true,
+    "legacyAliases": [
+      "Sermón"
+    ],
+    "labelEn": "Meditation",
+    "labelEs": "Meditación"
+  },
+  {
+    "id": "ministry_class_teacher",
+    "label": "Clase",
+    "active": true,
+    "labelEn": "Class",
+    "labelEs": "Clase"
+  },
+  {
+    "id": "ministry_pastoral_prayer",
+    "label": "Peticiones",
+    "active": true,
+    "legacyAliases": [
+      "Oración Pastoral"
+    ],
+    "labelEn": "Petitions",
+    "labelEs": "Peticiones"
+  },
+  {
+    "id": "ministry_communion_offering",
+    "label": "Cena y Ofrenda",
+    "active": true,
+    "labelEn": "Communion and Offering",
+    "labelEs": "Cena y Ofrenda"
+  },
+  {
+    "id": "ministry_closing_announcements",
+    "label": "Oración final y anuncios",
+    "active": true,
+    "labelEn": "Closing Prayer and Announcements",
+    "labelEs": "Oración final y anuncios"
+  },
+  {
+    "id": "ministry_closing_prayer",
+    "label": "Oración final",
+    "active": true,
+    "labelEn": "Closing Prayer",
+    "labelEs": "Oración final"
+  },
+  {
+    "id": "ministry_vigilancia",
+    "label": "Vigilancia",
+    "active": true,
+    "labelEn": "Security",
+    "labelEs": "Vigilancia"
+  }
 ]

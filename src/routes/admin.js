@@ -12,6 +12,35 @@ import { threeWeekWindow } from '../scheduler/dates.js';
 export const adminRouter=express.Router();
 adminRouter.use(requireAdmin);
 
+adminRouter.get('/church-profile',async(req,res)=>{
+  const church=await getDoc(tableNames.settings,req.churchId,'church');
+  res.json(church||{});
+});
+adminRouter.put('/church-profile',async(req,res)=>{
+  const old=await getDoc(tableNames.settings,req.churchId,'church') || {id:'church'};
+  const next={
+    ...old,
+    churchName:String(req.body.churchName??old.churchName??'Church').trim(),
+    churchNameEn:String(req.body.churchNameEn??req.body.churchName??old.churchNameEn??old.churchName??'Church').trim(),
+    churchNameEs:String(req.body.churchNameEs??req.body.churchName??old.churchNameEs??old.churchName??'Iglesia').trim(),
+    accentColor:String(req.body.accentColor??old.accentColor??'#2563eb'),
+    updatedAt:nowIso()
+  };
+  if(req.body.logo?.base64){
+    const raw=String(req.body.logo.base64).replace(/^data:[^;]+;base64,/, '');
+    const buf=Buffer.from(raw,'base64');
+    if(buf.length>3*1024*1024) return res.status(413).json({error:'Logo must be 3 MB or smaller',code:'LOGO_TOO_LARGE'});
+    const contentType=String(req.body.logo.contentType||'image/png');
+    if(!['image/png','image/jpeg','image/webp'].includes(contentType)) return res.status(400).json({error:'Logo must be PNG, JPG, or WEBP',code:'INVALID_LOGO'});
+    const ext=contentType==='image/jpeg'?'jpg':contentType==='image/webp'?'webp':'png';
+    const blobName=`${req.churchId}/branding/logo-${Date.now()}.${ext}`;
+    next.logo=await uploadBuffer(config.attachmentsContainer,blobName,buf,contentType);
+    next.logoUrl='/api/public/church-logo';
+  }
+  await putDoc(tableNames.settings,req.churchId,'church',next);
+  res.json({...next,logoUrl:next.logo?.blobName?'/api/public/church-logo':(next.logoUrl||'/assets/church-logo.png')});
+});
+
 adminRouter.get('/dashboard',async(req,res)=>{
   const settings=await getDoc(tableNames.settings,req.churchId,'church') || {timezone:'America/Chicago',weekStartsOn:0};
   const w=threeWeekWindow(settings.timezone||'America/Chicago',Number(settings.weekStartsOn??0));
@@ -79,7 +108,7 @@ adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
   if(!ranking.some(r=>r.member.id===memberId)) return res.status(409).json({error:'Selected member is not eligible for this ministry/service/date.'});
   const previous=assignment.currentMemberId||'';
   if(!assignment.originalMemberId) assignment.originalMemberId=memberId;
-  assignment.currentMemberId=memberId; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
+  assignment.currentMemberId=memberId; assignment.songIds=[]; assignment.songsUpdatedAt=null; assignment.songsUpdatedBy=null; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:memberId,ministryId:assignment.ministryId,programId:assignment.programId});
   await appendHistory(req.churchId,{eventType:'assignment.admin_reassigned',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId,dateISO:assignment.dateISO,previousMemberId:previous,newMemberId:memberId,penaltyEligible:false,source:'admin'});
   res.json(assignment);
@@ -89,7 +118,7 @@ adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
 adminRouter.get('/services',async(req,res)=>res.json({services:await listDocs(tableNames.services,req.churchId),templates:await listDocs(tableNames.templates,req.churchId),ministries:await listDocs(tableNames.ministries,req.churchId)}));
 adminRouter.post('/services',async(req,res)=>{
   const id=req.body.id || `svc_${crypto.randomUUID().replace(/-/g,'').slice(0,10)}`; const templateId=`tpl_${id.slice(4)}`;
-  const service={id,label:String(req.body.label||'New Service'),labelEs:String(req.body.labelEs||req.body.label||'Nuevo Servicio'),active:true,startTime:String(req.body.startTime||'10:00'),recurrence:req.body.recurrence||{frequency:'weekly',weekday:0},templateId};
+  const service={id,label:String(req.body.labelEn||req.body.label||req.body.labelEs||'New Service'),labelEn:String(req.body.labelEn||req.body.label||req.body.labelEs||'New Service'),labelEs:String(req.body.labelEs||req.body.label||req.body.labelEn||'Nuevo Servicio'),active:true,startTime:String(req.body.startTime||'10:00'),recurrence:req.body.recurrence||{frequency:'weekly',weekday:0},templateId};
   const template={id:templateId,serviceId:id,label:`${service.label} Program`,items:Array.isArray(req.body.items)?req.body.items:[]};
   await putDoc(tableNames.services,req.churchId,id,service,{active:true,label:service.label}); await putDoc(tableNames.templates,req.churchId,templateId,template,{serviceId:id});
   res.status(201).json({service,template});
@@ -106,7 +135,7 @@ adminRouter.put('/templates/:id',async(req,res)=>{
 adminRouter.get('/content',async(req,res)=>res.json(await listDocs(tableNames.content,req.churchId,{max:500})));
 adminRouter.post('/content',async(req,res)=>{
   const id=req.body.id || `content_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-  const doc={id,kind:String(req.body.kind||'announcement'),title:String(req.body.title||'').trim(),body:String(req.body.body||'').trim(),published:req.body.published!==false,publishedAt:nowIso(),createdAt:nowIso()};
+  const doc={id,kind:String(req.body.kind||'announcement'),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),body:String(req.body.bodyEs||req.body.body||req.body.bodyEn||'').trim(),bodyEs:String(req.body.bodyEs||req.body.body||'').trim(),bodyEn:String(req.body.bodyEn||req.body.body||'').trim(),published:req.body.published!==false,publishedAt:nowIso(),createdAt:nowIso()};
   if(req.body.file?.base64){
     const raw=String(req.body.file.base64).replace(/^data:[^;]+;base64,/, ''); const buf=Buffer.from(raw,'base64');
     const safeName=String(req.body.file.fileName||'attachment').replace(/[^a-zA-Z0-9._-]/g,'_'); const blobName=`${req.churchId}/${id}/${safeName}`;
@@ -121,7 +150,7 @@ adminRouter.get('/visitors',async(req,res)=>res.json(await listDocs(tableNames.v
 adminRouter.get('/songs',async(req,res)=>res.json(await listDocs(tableNames.songs,req.churchId,{max:2000})));
 adminRouter.post('/songs',async(req,res)=>{
   const id=req.body.id || `song_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-  const doc={id,number:String(req.body.number||'').trim(),title:String(req.body.title||'').trim(),titleEn:String(req.body.titleEn||'').trim(),active:req.body.active!==false,createdAt:nowIso()};
+  const doc={id,number:String(req.body.number||'').trim(),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),active:req.body.active!==false,createdAt:nowIso()};
   if(!doc.title) return res.status(400).json({error:'Song title is required.'});
   await putDoc(tableNames.songs,req.churchId,id,doc,{title:doc.title,number:doc.number,active:doc.active});
   res.status(201).json(doc);
@@ -129,7 +158,7 @@ adminRouter.post('/songs',async(req,res)=>{
 adminRouter.put('/songs/:id',async(req,res)=>{
   const old=await getDoc(tableNames.songs,req.churchId,req.params.id);
   if(!old) return res.status(404).json({error:'Song not found'});
-  const doc={...old,number:String(req.body.number??old.number??'').trim(),title:String(req.body.title??old.title??'').trim(),titleEn:String(req.body.titleEn??old.titleEn??'').trim(),active:req.body.active!==false,updatedAt:nowIso()};
+  const doc={...old,number:String(req.body.number??old.number??'').trim(),title:String(req.body.titleEs??req.body.title??old.titleEs??old.title??'').trim(),titleEs:String(req.body.titleEs??req.body.title??old.titleEs??old.title??'').trim(),titleEn:String(req.body.titleEn??old.titleEn??old.title??'').trim(),active:req.body.active!==false,updatedAt:nowIso()};
   if(!doc.title) return res.status(400).json({error:'Song title is required.'});
   await putDoc(tableNames.songs,req.churchId,doc.id,doc,{title:doc.title,number:doc.number,active:doc.active});
   res.json(doc);
