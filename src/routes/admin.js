@@ -50,7 +50,9 @@ adminRouter.get('/dashboard',async(req,res)=>{
     listDocs(tableNames.petitions,req.churchId,{filter:`status eq 'new'`,max:100}),
     listProgramViews(req.churchId,{from:w.start,to:w.end})
   ]);
-  res.json({window:w,unfilled:assignments.filter(a=>a.status==='unfilled'),newVisitors:visitors.length,newPetitions:petitions.length,programs});
+  const unfilled=assignments.filter(a=>a.status==='unfilled');
+  const missingSongs=programs.reduce((sum,p)=>sum+Number(p.readiness?.missingSongs||0),0);
+  res.json({window:w,unfilled,missingSongs,newVisitors:visitors.length,newPetitions:petitions.length,programs});
 });
 
 adminRouter.get('/people',async(req,res)=>{
@@ -94,8 +96,17 @@ adminRouter.get('/history',async(req,res)=>res.json(await listHistory(req.church
 adminRouter.get('/schedule/assignments/:id/candidates',async(req,res)=>{
   const assignment=await getDoc(tableNames.assignments,req.churchId,req.params.id);
   if(!assignment) return res.status(404).json({error:'Assignment not found'});
-  const {ranking}=await pickReplacement(req.churchId,assignment,new Set(assignment.currentMemberId?[assignment.currentMemberId]:[]));
-  res.json({assignment,candidates:ranking.map(r=>({memberId:r.member.id,fullName:r.member.fullName,score:r.score}))});
+  const [{ranking},members]=await Promise.all([
+    pickReplacement(req.churchId,assignment,new Set(assignment.currentMemberId?[assignment.currentMemberId]:[])),
+    listDocs(tableNames.members,req.churchId,{max:1000})
+  ]);
+  const eligibleIds=new Set(ranking.map(r=>r.member.id));
+  const allActive=members.filter(m=>m.active!==false && m.id!==assignment.currentMemberId).sort((a,b)=>String(a.fullName||'').localeCompare(String(b.fullName||''),'es'));
+  res.json({
+    assignment,
+    candidates:ranking.map(r=>({memberId:r.member.id,fullName:r.member.fullName,score:r.score})),
+    overrideCandidates:allActive.map(m=>({memberId:m.id,fullName:m.fullName,eligible:eligibleIds.has(m.id),ministries:m.ministries||[]}))
+  });
 });
 adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
   const assignment=await getDoc(tableNames.assignments,req.churchId,req.params.id);
@@ -105,13 +116,15 @@ adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
   const member=await getDoc(tableNames.members,req.churchId,memberId);
   if(!member || member.active===false) return res.status(400).json({error:'Selected member is not active'});
   const {ranking}=await pickReplacement(req.churchId,assignment,new Set(assignment.currentMemberId?[assignment.currentMemberId]:[]));
-  if(!ranking.some(r=>r.member.id===memberId)) return res.status(409).json({error:'Selected member is not eligible for this ministry/service/date.'});
+  const eligible=ranking.some(r=>r.member.id===memberId);
+  const manualOverride=req.body.override===true;
+  if(!eligible && !manualOverride) return res.status(409).json({error:'Selected member is not eligible for this ministry/service/date.',code:'MANUAL_OVERRIDE_REQUIRED'});
   const previous=assignment.currentMemberId||'';
   if(!assignment.originalMemberId) assignment.originalMemberId=memberId;
   assignment.currentMemberId=memberId; assignment.songIds=[]; assignment.songsUpdatedAt=null; assignment.songsUpdatedBy=null; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:memberId,ministryId:assignment.ministryId,programId:assignment.programId});
-  await appendHistory(req.churchId,{eventType:'assignment.admin_reassigned',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId,dateISO:assignment.dateISO,previousMemberId:previous,newMemberId:memberId,penaltyEligible:false,source:'admin'});
-  res.json(assignment);
+  await appendHistory(req.churchId,{eventType:manualOverride&&!eligible?'assignment.admin_override':'assignment.admin_reassigned',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId,dateISO:assignment.dateISO,previousMemberId:previous,newMemberId:memberId,penaltyEligible:false,source:'admin',details:{manualOverride:manualOverride&&!eligible,eligibilityOverridden:manualOverride&&!eligible}});
+  res.json({...assignment,manualOverride:manualOverride&&!eligible});
 });
 
 
@@ -137,9 +150,12 @@ adminRouter.post('/content',async(req,res)=>{
   const id=req.body.id || `content_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
   const doc={id,kind:String(req.body.kind||'announcement'),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),body:String(req.body.bodyEs||req.body.body||req.body.bodyEn||'').trim(),bodyEs:String(req.body.bodyEs||req.body.body||'').trim(),bodyEn:String(req.body.bodyEn||req.body.body||'').trim(),published:req.body.published!==false,publishedAt:nowIso(),createdAt:nowIso()};
   if(req.body.file?.base64){
+    const contentType=String(req.body.file.contentType||'application/octet-stream').toLowerCase();
+    if(!['application/pdf','image/jpeg','image/png'].includes(contentType)) return res.status(400).json({error:'Attachments must be PDF, JPG/JPEG, or PNG.',code:'INVALID_ATTACHMENT_TYPE'});
     const raw=String(req.body.file.base64).replace(/^data:[^;]+;base64,/, ''); const buf=Buffer.from(raw,'base64');
+    if(buf.length>8*1024*1024) return res.status(413).json({error:'Attachment must be 8 MB or smaller.',code:'ATTACHMENT_TOO_LARGE'});
     const safeName=String(req.body.file.fileName||'attachment').replace(/[^a-zA-Z0-9._-]/g,'_'); const blobName=`${req.churchId}/${id}/${safeName}`;
-    doc.attachment={...(await uploadBuffer(config.attachmentsContainer,blobName,buf,String(req.body.file.contentType||'application/octet-stream'))),fileName:safeName};
+    doc.attachment={...(await uploadBuffer(config.attachmentsContainer,blobName,buf,contentType)),fileName:safeName};
   }
   await putDoc(tableNames.content,req.churchId,id,doc,{kind:doc.kind,published:doc.published,publishedAt:doc.publishedAt}); res.status(201).json(doc);
 });

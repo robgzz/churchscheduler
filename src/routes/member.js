@@ -20,9 +20,13 @@ memberRouter.get('/programs',requireAnyGroup('members','worship'),async(req,res)
 });
 memberRouter.post('/unavailability',requireGroup('worship'),async(req,res)=>res.status(201).json(await addUnavailability(req.churchId,req.identity.member.id,req.body)));
 memberRouter.post('/replacement/:assignmentId',requireGroup('worship'),async(req,res)=>res.json(await requestReplacement(req.churchId,req.identity.member.id,req.params.assignmentId,{reason:'member_request'})));
+memberRouter.get('/petitions',requireGroup('members'),async(req,res)=>{
+  const rows=await listDocs(tableNames.petitions,req.churchId,{max:500});
+  res.json(rows.filter(p=>p.private!==true).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).map(p=>({id:p.id,memberId:p.memberId,memberName:p.memberName,text:p.text,createdAt:p.createdAt,status:p.status})));
+});
 memberRouter.post('/petitions',requireGroup('members'),async(req,res)=>{
   const id=`petition_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`;
-  const doc={id,memberId:req.identity.member.id,memberName:req.identity.member.fullName,text:String(req.body.text||'').trim(),private:req.body.private===true,status:'new',createdAt:nowIso()};
+  const doc={id,memberId:req.identity.member.id,memberName:req.identity.member.fullName,text:String(req.body.text||'').trim(),private:req.body.private!==false,status:'new',createdAt:nowIso()};
   if(!doc.text) return res.status(400).json({error:'Petition text is required.',code:'PETITION_REQUIRED'});
   await putDoc(tableNames.petitions,req.churchId,id,doc,{memberId:doc.memberId,status:'new',createdAt:doc.createdAt});
   res.status(201).json({ok:true,id});

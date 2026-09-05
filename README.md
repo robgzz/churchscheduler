@@ -1,8 +1,19 @@
-# Church Scheduler V2
+# Church Scheduler V2.3
 
 Mobile-first church scheduling PWA designed for Azure Container Apps + Azure Blob/Table Storage.
 
 This repository intentionally stays on **vanilla HTML/CSS/JavaScript** for V2. React/Vite can be evaluated later without changing the Azure API/data model.
+
+## V2.3 highlights
+
+- A program is only **Ready** when all positions are filled **and every Cantos assignment has saved song selections**.
+- Admins can deliberately override normal eligibility and assign any active member; the override is confirmed and audited.
+- Announcements display inline; PDF/JPEG/PNG attachments are optional supporting downloads, with JPEG/PNG previewed inline.
+- Petitions can be Public or Private (Private is the default).
+- Proactive unavailability is a prominent action on Home.
+- Major visual refresh with a warm Westbury-inspired light theme and cleaner mobile program editing.
+
+See `RELEASE-NOTES-V2.3.0.md` for details.
 
 ## What V2 changes
 

@@ -12,10 +12,23 @@ export async function listProgramViews(churchId,{from='',to=''}={}){
   ]);
   const svc=new Map(services.map(x=>[x.id,x])), tpl=new Map(templates.map(x=>[x.id,x])), mem=new Map(members.map(x=>[x.id,x])), songMap=new Map(songs.map(x=>[x.id,x]));
   const byProgram=new Map(); for(const a of assignments){ if(!byProgram.has(a.programId)) byProgram.set(a.programId,{}); byProgram.get(a.programId)[a.assignmentKey]=a; }
-  return programs.sort((a,b)=>a.dateISO.localeCompare(b.dateISO)||String(a.startTime).localeCompare(String(b.startTime))).map(p=>({
-    ...p, service:svc.get(p.serviceId)||null,
-    items:renderProgramItems(tpl.get(p.templateId),byProgram.get(p.id)||{},mem,songMap)
-  }));
+  return programs.sort((a,b)=>a.dateISO.localeCompare(b.dateISO)||String(a.startTime).localeCompare(String(b.startTime))).map(p=>{
+    const assignmentsForProgram=byProgram.get(p.id)||{};
+    const items=renderProgramItems(tpl.get(p.templateId),assignmentsForProgram,mem,songMap);
+    const uniqueAssignments=[...new Map(Object.values(assignmentsForProgram).filter(Boolean).map(a=>[a.id||a.assignmentKey,a])).values()];
+    const openAssignments=uniqueAssignments.filter(a=>!a.currentMemberId || a.status==='unfilled');
+    const missingSongAssignments=uniqueAssignments.filter(a=>a.ministryId==='ministry_songs' && a.currentMemberId && a.status!=='unfilled' && (!Array.isArray(a.songIds) || a.songIds.length===0));
+    return {
+      ...p,
+      service:svc.get(p.serviceId)||null,
+      items,
+      readiness:{
+        ready:openAssignments.length===0 && missingSongAssignments.length===0,
+        openAssignments:openAssignments.length,
+        missingSongs:missingSongAssignments.length
+      }
+    };
+  });
 }
 
 export async function myAssignments(churchId,memberId){

@@ -25,7 +25,7 @@ app.use(express.json({limit:'12mb'}));
 app.use(cookieParser());
 app.use(localizationMiddleware);
 app.use(attachIdentity);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'2.2.0'}));
+app.get('/healthz',(req,res)=>res.json({ok:true,version:'2.3.0'}));
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);
