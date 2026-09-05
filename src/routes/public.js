@@ -1,0 +1,33 @@
+import express from 'express';
+import crypto from 'node:crypto';
+import { tableNames, config } from '../config.js';
+import { getDoc, listDocs, putDoc, nowIso, downloadBuffer } from '../storage/repository.js';
+
+export const publicRouter=express.Router();
+publicRouter.get('/bootstrap',async(req,res)=>{
+  const [church,services,content]=await Promise.all([
+    getDoc(tableNames.settings,req.churchId,'church'),listDocs(tableNames.services,req.churchId),listDocs(tableNames.content,req.churchId,{max:100})
+  ]);
+  const groups=req.identity?.member?.groups || req.identity?.user?.groups || [];
+  const canSeeNews=groups.includes('members') || groups.includes('worship') || req.identity?.user?.adminAccess===true || req.identity?.user?.churchAdministrator===true;
+  const allowedKinds=canSeeNews ? ['announcement','bulletin'] : ['bulletin'];
+  const visible=content.filter(x=>x.published!==false && allowedKinds.includes(x.kind)).sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt)));
+  res.json({church,services:services.filter(s=>s.active!==false),content:visible});
+});
+publicRouter.post('/visitor-contact',async(req,res)=>{
+  const id=`visitor_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`;
+  const doc={id,kind:'visitor_contact',fullName:String(req.body.fullName||'').trim(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),address:String(req.body.address||'').trim(),firstVisit:req.body.firstVisit===true,prayerRequest:String(req.body.prayerRequest||'').trim(),interests:Array.isArray(req.body.interests)?req.body.interests:[],createdAt:nowIso(),status:'new'};
+  if(!doc.fullName) return res.status(400).json({error:'Name is required.'});
+  await putDoc(tableNames.visitorContacts,req.churchId,id,doc,{status:'new',createdAt:doc.createdAt});
+  res.status(201).json({ok:true,id});
+});
+publicRouter.get('/files/:contentId',async(req,res)=>{
+  const doc=await getDoc(tableNames.content,req.churchId,req.params.contentId);
+  if(!doc?.attachment?.blobName) return res.status(404).json({error:'File not found'});
+  const isPublic = doc.published!==false && ['announcement','bulletin'].includes(doc.kind);
+  const groups = req.identity?.member?.groups || req.identity?.user?.groups || [];
+  const isMember = groups.includes('members') || groups.includes('worship') || req.identity?.user?.adminAccess===true || req.identity?.user?.churchAdministrator===true;
+  if(!isPublic && !isMember) return res.status(403).json({error:'Access denied'});
+  const f=await downloadBuffer(config.attachmentsContainer,doc.attachment.blobName);
+  res.type(f.contentType); res.setHeader('Content-Disposition',`inline; filename="${(doc.attachment.fileName||'file').replace(/"/g,'')}"`); res.send(f.buffer);
+});

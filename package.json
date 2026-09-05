@@ -1,0 +1,24 @@
+{
+  "name": "church-scheduler-v2",
+  "version": "2.0.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "job": "node src/jobs/scheduler.js",
+    "test": "node --test",
+    "lint:syntax": "node --check src/server.js && find src -name '*.js' -print0 | xargs -0 -n1 node --check"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/identity": "^4.11.1",
+    "@azure/storage-blob": "^12.28.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "web-push": "^3.6.7"
+  }
+}

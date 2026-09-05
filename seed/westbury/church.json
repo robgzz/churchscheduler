@@ -1,0 +1,21 @@
+{
+  "id": "westbury",
+  "churchName": "Westbury Church of Christ",
+  "defaultLocale": "es",
+  "timezone": "America/Chicago",
+  "weekStartsOn": 0,
+  "accentColor": "#2563eb",
+  "algorithm": {
+    "mode": "SMART_FAIR_V2",
+    "historyWindowWeeks": 8,
+    "replacementWindowWeeks": 12,
+    "weights": {
+      "roleFairness": 0.45,
+      "workloadBalance": 0.25,
+      "overallRest": 0.15,
+      "futureSpacing": 0.15
+    },
+    "currentWeekReplacementPoints": 2,
+    "currentWeekReplacementCap": 8
+  }
+}

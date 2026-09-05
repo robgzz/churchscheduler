@@ -1,0 +1,38 @@
+[
+  {
+    "id":"tpl_sunday_class","serviceId":"svc_sunday_class","label":"Sunday Class Program","items":[
+      {"id":"sc_open","label":"Bienvenida y Oración","ministryId":"ministry_preside","assignmentKeys":["opening"]},
+      {"id":"sc_songs_a","label":"Cantos","ministryId":"ministry_songs","assignmentKeys":["songs_a"]},
+      {"id":"sc_reading","label":"Lectura y Oración","ministryId":"ministry_scripture_prayer","assignmentKeys":["scripture_prayer"]},
+      {"id":"sc_songs_b","label":"Cantos","ministryId":"ministry_songs","assignmentKeys":["songs_b"]},
+      {"id":"sc_class","label":"Clase","ministryId":"ministry_class_teacher","assignmentKeys":["class_teacher"]},
+      {"id":"sc_close","label":"Oración final","ministryId":"ministry_closing_prayer","assignmentKeys":["closing_prayer"]}
+    ]
+  },
+  {
+    "id":"tpl_sunday_worship","serviceId":"svc_sunday_worship","label":"Sunday Worship Program","items":[
+      {"id":"sw_open","label":"Bienvenida y Oración","ministryId":"ministry_preside","assignmentKeys":["opening"]},
+      {"id":"sw_songs_a","label":"Cantos","ministryId":"ministry_songs","assignmentKeys":["songs_a"]},
+      {"id":"sw_reading","label":"Lectura y Oración","ministryId":"ministry_scripture_prayer","assignmentKeys":["scripture_prayer"]},
+      {"id":"sw_songs_b","label":"Cantos","ministryId":"ministry_songs","assignmentKeys":["songs_b"]},
+      {"id":"sw_meditation","label":"Meditación","ministryId":"ministry_meditation","assignmentKeys":["meditation"]},
+      {"id":"sw_invitation","label":"Canto de invitación","ministryId":"ministry_songs","assignmentKeys":["songs_a"],"linked":true},
+      {"id":"sw_petitions","label":"Peticiones","ministryId":"ministry_pastoral_prayer","assignmentKeys":["pastoral_prayer"]},
+      {"id":"sw_communion","label":"Cena y Ofrenda","ministryId":"ministry_communion_offering","assignmentKeys":["communion_offering"]},
+      {"id":"sw_communion_song","label":"Canto de la cena","ministryId":"ministry_songs","assignmentKeys":["songs_b"],"linked":true},
+      {"id":"sw_offering_song","label":"Canto de la ofrenda","ministryId":"ministry_songs","assignmentKeys":["songs_b"],"linked":true},
+      {"id":"sw_close","label":"Oración final y anuncios","ministryId":"ministry_closing_announcements","assignmentKeys":["closing_announcements"]},
+      {"id":"sw_vigilance","label":"Vigilancia","ministryId":"ministry_vigilancia","assignmentKeys":["vigilancia_1","vigilancia_2"]}
+    ]
+  },
+  {
+    "id":"tpl_wednesday_class","serviceId":"svc_wednesday_class","label":"Wednesday Class Program","items":[
+      {"id":"wc_open","label":"Bienvenida y Oración","ministryId":"ministry_preside","assignmentKeys":["opening"]},
+      {"id":"wc_songs_a","label":"Cantos","ministryId":"ministry_songs","assignmentKeys":["songs_a"]},
+      {"id":"wc_reading","label":"Lectura y Oración","ministryId":"ministry_scripture_prayer","assignmentKeys":["scripture_prayer"]},
+      {"id":"wc_songs_b","label":"Cantos","ministryId":"ministry_songs","assignmentKeys":["songs_b"]},
+      {"id":"wc_class","label":"Clase","ministryId":"ministry_class_teacher","assignmentKeys":["class_teacher"]},
+      {"id":"wc_close","label":"Oración final y Anuncios","ministryId":"ministry_closing_announcements","assignmentKeys":["closing_announcements"]}
+    ]
+  }
+]

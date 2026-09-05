@@ -1,0 +1,1892 @@
+[
+  {
+    "id": "m_9qkpkyjo",
+    "fullName": "Roberto Gonzalez",
+    "username": "robertogonzalez",
+    "email": "robgzz@hotmail.com",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_communion_offering",
+      "ministry_preside",
+      "ministry_songs"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [
+      {
+        "from": "2026-06-17",
+        "to": "2026-06-30"
+      }
+    ],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-08-05T23:00:11.282Z",
+      "ministry_communion_offering": "2026-07-22T23:04:35.524Z",
+      "ministry_songs": "2026-08-23T23:00:09.976Z",
+      "ministry_preside": "2026-07-26T23:04:12.586Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.976Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_cena",
+        "role_presidir",
+        "role_abasbosd",
+        "role_cantos",
+        "role_aqnep8u9",
+        "role_bfoerktv",
+        "role_hng3j6z8"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": "2026-03-11T12:51:24.999Z",
+      "updatedAt": "2026-06-11T04:27:09.091Z",
+      "lastSongSelectionsByRole": {
+        "role_abasbosd__4": {
+          "items": [
+            {
+              "slotId": "slot_open",
+              "songId": "song_5zjxvdkd"
+            },
+            {
+              "slotId": "slot_comm",
+              "songId": "song_moma1me5"
+            }
+          ],
+          "note": "",
+          "sessionId": "sess_dom_ador",
+          "occurrenceKey": "sess_dom_ador__2026-06-14",
+          "savedAt": "2026-06-11T05:01:32.764Z"
+        },
+        "role_bfoerktv__9": {
+          "items": [
+            {
+              "slotId": "slot_open",
+              "songId": "song_tbmnroal"
+            }
+          ],
+          "note": "",
+          "sessionId": "sess_dom_ador",
+          "occurrenceKey": "sess_dom_ador__2026-06-14",
+          "savedAt": "2026-06-11T05:02:32.910Z"
+        },
+        "role_aqnep8u9__10": {
+          "items": [
+            {
+              "slotId": "slot_open",
+              "songId": "song_pmi5l218"
+            }
+          ],
+          "note": "",
+          "sessionId": "sess_dom_ador",
+          "occurrenceKey": "sess_dom_ador__2026-06-14",
+          "savedAt": "2026-06-11T05:03:00.458Z"
+        }
+      }
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_vk1kd5ri",
+    "fullName": "Esmeralda Gonzalez",
+    "username": "egonzalez",
+    "email": "reyes_esmeralda@hotmail.com",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [],
+    "serviceAvailability": [],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {},
+    "legacyLastServedAny": null,
+    "legacy": {
+      "accessGroup": "member_group",
+      "roleIds": [],
+      "sessionIds": [],
+      "createdAt": "2026-03-11T21:39:30.555Z",
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_kcca1pz0",
+    "fullName": "Andres Trejo",
+    "username": "andrestrejo",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_communion_offering"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-09-02T23:00:06.520Z",
+      "ministry_communion_offering": "2026-07-26T23:04:12.583Z",
+      "ministry_class_teacher": "2026-04-17T04:49:37.096Z"
+    },
+    "legacyLastServedAny": "2026-09-02T23:00:06.520Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_cena",
+        "role_hng3j6z8",
+        "role_abasbosd"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_kp6m1bvd",
+    "fullName": "Martin Calix",
+    "username": "martincalix",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-08-09T23:00:13.597Z"
+    },
+    "legacyLastServedAny": "2026-08-09T23:00:13.597Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_sqtm3ut5",
+    "fullName": "Marcos Pineda",
+    "username": "marcospineda",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-08-09T23:00:13.595Z"
+    },
+    "legacyLastServedAny": "2026-08-09T23:00:13.595Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_p84oip45",
+    "fullName": "Virgilio Medrano",
+    "username": "virgiliomedrano",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_closing_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-04-17T04:49:37.086Z",
+      "ministry_closing_prayer": "2026-08-23T23:00:09.989Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.989Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_yz0y2xna"
+      ],
+      "sessionIds": [
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_ajz2d09f",
+    "fullName": "Enot Villegas",
+    "username": "enotvillegas",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-08-23T23:00:09.987Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.987Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_kxzcupj3",
+    "fullName": "Ruben Maldonado",
+    "username": "rubenmaldonado",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_communion_offering",
+      "ministry_scripture_prayer",
+      "ministry_preside",
+      "ministry_closing_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_communion_offering": "2026-08-23T23:00:09.987Z",
+      "ministry_preside": "2026-07-29T23:01:49.281Z",
+      "ministry_songs": "2026-08-16T23:00:09.933Z",
+      "ministry_scripture_prayer": "2026-08-02T23:00:33.806Z",
+      "ministry_closing_prayer": "2026-08-12T23:00:07.306Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.987Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_cena",
+        "role_lectura_oracion",
+        "role_presidir",
+        "role_abasbosd",
+        "role_yz0y2xna",
+        "role_aqnep8u9",
+        "role_bfoerktv",
+        "role_hng3j6z8"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_pl88by14",
+    "fullName": "Alex Infante",
+    "username": "alexinfante",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_closing_prayer",
+      "ministry_closing_announcements",
+      "ministry_preside",
+      "ministry_songs",
+      "ministry_pastoral_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_closing_announcements": "2026-08-16T23:00:09.947Z",
+      "ministry_pastoral_prayer": "2026-08-23T23:00:09.987Z",
+      "ministry_songs": "2026-08-12T23:00:07.306Z",
+      "ministry_scripture_prayer": "2026-08-02T23:00:33.803Z",
+      "ministry_closing_prayer": "2026-09-02T23:00:06.519Z",
+      "ministry_preside": "2026-07-08T23:03:52.849Z"
+    },
+    "legacyLastServedAny": "2026-09-02T23:00:06.519Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_yz0y2xna",
+        "role_5og6pjw7",
+        "role_presidir",
+        "role_cantos",
+        "role_d25gp4lx"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_pfb46hg8",
+    "fullName": "David Garcia",
+    "username": "davidgarcia",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_communion_offering",
+      "ministry_scripture_prayer",
+      "ministry_preside",
+      "ministry_closing_prayer",
+      "ministry_closing_announcements",
+      "ministry_pastoral_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-09-02T23:00:06.520Z",
+      "ministry_preside": "2026-08-05T23:00:11.282Z",
+      "ministry_scripture_prayer": "2026-07-22T23:04:35.540Z",
+      "ministry_communion_offering": "2026-06-11T01:54:46.297Z",
+      "ministry_closing_announcements": "2026-08-23T23:00:09.987Z",
+      "ministry_pastoral_prayer": "2026-08-16T23:00:09.947Z",
+      "ministry_closing_prayer": "2026-08-09T23:00:13.597Z"
+    },
+    "legacyLastServedAny": "2026-09-02T23:00:06.520Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_cena",
+        "role_lectura_oracion",
+        "role_presidir",
+        "role_abasbosd",
+        "role_yz0y2xna",
+        "role_5og6pjw7",
+        "role_d25gp4lx"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_59ctmih0",
+    "fullName": "Max Infante",
+    "username": "maxinfante",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-08-02T23:00:33.805Z"
+    },
+    "legacyLastServedAny": "2026-08-02T23:00:33.805Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos"
+      ],
+      "sessionIds": [
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_bn9tgpgk",
+    "fullName": "Daniel Betanco",
+    "username": "danielbetanco",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_communion_offering"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-07-22T23:04:35.524Z",
+      "ministry_communion_offering": "2026-07-12T23:04:34.907Z"
+    },
+    "legacyLastServedAny": "2026-07-22T23:04:35.524Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_cena"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_v21mmrfi",
+    "fullName": "Antonio Gomez",
+    "username": "antoniogomez",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_communion_offering",
+      "ministry_preside",
+      "ministry_closing_announcements",
+      "ministry_closing_prayer",
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-08-23T23:00:09.989Z",
+      "ministry_preside": "2026-09-02T23:00:06.520Z",
+      "ministry_communion_offering": "2026-08-09T23:00:13.594Z",
+      "ministry_closing_announcements": "2026-08-02T23:00:33.803Z",
+      "ministry_scripture_prayer": "2026-07-22T23:04:35.535Z",
+      "ministry_closing_prayer": "2026-08-05T23:00:11.282Z"
+    },
+    "legacyLastServedAny": "2026-09-02T23:00:06.520Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_cena",
+        "role_presidir",
+        "role_5og6pjw7",
+        "role_yz0y2xna",
+        "role_lectura_oracion",
+        "role_abasbosd"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_2c64bi5x",
+    "fullName": "Juan Umaña",
+    "username": "juanumana",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_preside",
+      "ministry_songs",
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-08-05T23:00:11.282Z",
+      "ministry_scripture_prayer": "2026-08-12T23:00:07.306Z",
+      "ministry_preside": "2026-08-02T23:00:33.806Z"
+    },
+    "legacyLastServedAny": "2026-08-12T23:00:07.306Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_presidir",
+        "role_cantos",
+        "role_lectura_oracion"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_gza9ud2e",
+    "fullName": "Eduardo Ayala",
+    "username": "eduardoayala",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_scripture_prayer",
+      "ministry_preside",
+      "ministry_closing_prayer",
+      "ministry_closing_announcements"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_class",
+      "svc_sunday_worship",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_communion_offering": "2026-04-16T05:20:01.299Z",
+      "ministry_scripture_prayer": "2026-07-29T23:01:49.281Z",
+      "ministry_preside": "2026-07-22T23:04:35.539Z",
+      "ministry_songs": "2026-08-16T23:00:09.933Z",
+      "ministry_closing_prayer": "2026-08-02T23:00:33.805Z",
+      "ministry_closing_announcements": "2026-07-26T23:04:12.583Z"
+    },
+    "legacyLastServedAny": "2026-08-16T23:00:09.933Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_lectura_oracion",
+        "role_presidir",
+        "role_hng3j6z8",
+        "role_aqnep8u9",
+        "role_abasbosd",
+        "role_yz0y2xna",
+        "role_5og6pjw7"
+      ],
+      "sessionIds": [
+        "sess_dom_clase",
+        "sess_dom_ador",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_kqq2a9yu",
+    "fullName": "Oscar Ventura",
+    "username": "oscarventura",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {},
+    "legacyLastServedAny": null,
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_lectura_oracion"
+      ],
+      "sessionIds": [],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_b32nur6r",
+    "fullName": "Orlando Ventura",
+    "username": "orlandoventura",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-04-16T05:18:13.432Z",
+      "ministry_scripture_prayer": "2026-07-12T23:04:34.907Z"
+    },
+    "legacyLastServedAny": "2026-07-12T23:04:34.907Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_lectura_oracion"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_r1z8hd5h",
+    "fullName": "Christopher Piñera",
+    "username": "christopherpinera",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-08-02T23:00:33.793Z"
+    },
+    "legacyLastServedAny": "2026-08-02T23:00:33.793Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_abasbosd",
+        "role_hng3j6z8",
+        "role_aqnep8u9"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_0rwn6oag",
+    "fullName": "Geovanny Saldaña",
+    "username": "geovannysaldana",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-04-17T04:49:37.082Z"
+    },
+    "legacyLastServedAny": "2026-04-17T04:49:37.082Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_4rcwlryp",
+    "fullName": "Luis Alvarez",
+    "username": "luisalvarez",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_songs"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-08-16T23:00:09.947Z",
+      "ministry_songs": "2026-04-17T04:49:21.884Z"
+    },
+    "legacyLastServedAny": "2026-08-16T23:00:09.947Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_cantos"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_o0c3xru0",
+    "fullName": "Alejandro Mendoza",
+    "username": "alejandromendoza",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [],
+    "serviceAvailability": [],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {},
+    "legacyLastServedAny": null,
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [],
+      "sessionIds": [],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_emb6t54y",
+    "fullName": "Antonio Mendoza",
+    "username": "antoniomendoza",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_communion_offering",
+      "ministry_scripture_prayer",
+      "ministry_closing_prayer",
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_communion_offering": "2026-07-08T23:03:52.831Z",
+      "ministry_songs": "2026-08-23T23:00:09.989Z",
+      "ministry_scripture_prayer": "2026-07-12T23:04:34.909Z",
+      "ministry_closing_prayer": "2026-08-26T23:00:09.549Z",
+      "ministry_preside": "2026-07-26T23:04:12.583Z"
+    },
+    "legacyLastServedAny": "2026-08-26T23:00:09.549Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_cena",
+        "role_lectura_oracion",
+        "role_abasbosd",
+        "role_yz0y2xna",
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_1x3dcfla",
+    "fullName": "Alejandro Robles",
+    "username": "alejandrorobles",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_communion_offering"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_communion_offering": "2026-08-02T23:00:33.803Z"
+    },
+    "legacyLastServedAny": "2026-08-02T23:00:33.803Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cena"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_30avg1zs",
+    "fullName": "Manuel Rodriguez",
+    "username": "manuelrodriguez",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-08-09T23:00:13.597Z"
+    },
+    "legacyLastServedAny": "2026-08-09T23:00:13.597Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_a8uwmwgj",
+    "fullName": "Luis Betanco",
+    "username": "luisbetanco",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_meditation",
+      "ministry_preside",
+      "ministry_class_teacher",
+      "ministry_closing_announcements"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": true,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_meditation": "2026-08-23T23:00:09.987Z",
+      "ministry_preside": "2026-06-10T23:01:54.518Z",
+      "ministry_class_teacher": "2026-09-02T23:00:06.519Z"
+    },
+    "legacyLastServedAny": "2026-09-02T23:00:06.519Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_sermon",
+        "role_presidir",
+        "role_jr87n03i",
+        "role_5og6pjw7"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_73cctonh",
+    "fullName": "Geronimo Granados",
+    "username": "geronimogranados",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-08-23T23:00:09.990Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.990Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_mewlznnk",
+    "fullName": "Miguel Rosales",
+    "username": "miguelrosales",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-07-22T23:04:35.524Z"
+    },
+    "legacyLastServedAny": "2026-07-22T23:04:35.524Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_fa22s0o7",
+    "fullName": "Javier Rosales",
+    "username": "javierrosales",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-08-16T23:00:09.950Z",
+      "ministry_scripture_prayer": "2026-08-09T23:00:13.595Z"
+    },
+    "legacyLastServedAny": "2026-08-16T23:00:09.950Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_e6sk019n",
+    "fullName": "Rigo Garcia",
+    "username": "rigogarcia",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-08-16T23:00:09.950Z"
+    },
+    "legacyLastServedAny": "2026-08-16T23:00:09.950Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion"
+      ],
+      "sessionIds": [
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_i0ctymoh",
+    "fullName": "Efren Trejo",
+    "username": "efrentrejo",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_preside",
+      "ministry_closing_prayer",
+      "ministry_vigilancia"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-07-15T23:01:19.997Z",
+      "ministry_closing_prayer": "2026-07-29T23:01:49.280Z",
+      "ministry_preside": "2026-08-26T23:00:09.549Z",
+      "ministry_vigilancia": "2026-08-23T23:00:09.987Z"
+    },
+    "legacyLastServedAny": "2026-08-26T23:00:09.549Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_presidir",
+        "role_yz0y2xna",
+        "role_7od6h1yq"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_p0mvu7b7",
+    "fullName": "Emmanuel Garcia",
+    "username": "emmanuelgarcia",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-08-23T23:00:09.975Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.975Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_abasbosd",
+        "role_aqnep8u9",
+        "role_hng3j6z8"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_03b4imie",
+    "fullName": "Rufino Alfaro",
+    "username": "rufinoalfaro",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-08-23T23:00:09.990Z",
+      "ministry_preside": "2026-08-02T23:00:33.803Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.990Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_juul7lgu",
+    "fullName": "Yovany Garcia",
+    "username": "yovanygarcia",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_closing_announcements",
+      "ministry_closing_prayer",
+      "ministry_scripture_prayer",
+      "ministry_communion_offering"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-08-02T23:00:33.805Z",
+      "ministry_scripture_prayer": "2026-08-23T23:00:09.988Z",
+      "ministry_closing_prayer": "2026-07-22T23:04:35.535Z",
+      "ministry_communion_offering": "2026-08-16T23:00:09.947Z",
+      "ministry_closing_announcements": "2026-08-09T23:00:13.594Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.988Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_hng3j6z8",
+        "role_bfoerktv",
+        "role_aqnep8u9",
+        "role_abasbosd",
+        "role_5og6pjw7",
+        "role_yz0y2xna",
+        "role_lectura_oracion",
+        "role_cena"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_2lpbztmc",
+    "fullName": "Jose Luis Quino",
+    "username": "joseluisquino",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-08-16T23:00:09.947Z"
+    },
+    "legacyLastServedAny": "2026-08-16T23:00:09.947Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_1u5y2olb",
+    "fullName": "Harland Rall",
+    "username": "harlandrall",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs",
+      "ministry_communion_offering",
+      "ministry_scripture_prayer",
+      "ministry_preside"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship",
+      "svc_wednesday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_preside": "2026-08-12T23:00:07.306Z",
+      "ministry_communion_offering": "2026-07-08T23:03:52.828Z",
+      "ministry_songs": "2026-08-26T23:00:09.549Z",
+      "ministry_scripture_prayer": "2026-09-02T23:00:06.520Z"
+    },
+    "legacyLastServedAny": "2026-09-02T23:00:06.520Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_cena",
+        "role_lectura_oracion",
+        "role_presidir"
+      ],
+      "sessionIds": [
+        "sess_dom_ador",
+        "sess_miercoles"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_rg43yu0m",
+    "fullName": "Test User",
+    "username": "tuser",
+    "email": "robgzz2011@gmail.com",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [],
+    "serviceAvailability": [],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {},
+    "legacyLastServedAny": null,
+    "legacy": {
+      "accessGroup": "member_group",
+      "roleIds": [],
+      "sessionIds": [],
+      "createdAt": "2026-03-17T03:27:08.131Z",
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": true
+  },
+  {
+    "id": "m_m4bro2af",
+    "fullName": "Erik Martinez",
+    "username": "emartinez",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_class",
+      "svc_wednesday_class",
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-08-26T23:00:09.549Z"
+    },
+    "legacyLastServedAny": "2026-08-26T23:00:09.549Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion"
+      ],
+      "sessionIds": [
+        "sess_dom_clase",
+        "sess_miercoles",
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_yumdvok6",
+    "fullName": "Cristian Mejia",
+    "username": "cristianmejia",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer",
+      "ministry_vigilancia"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_vigilancia": "2026-08-23T23:00:09.987Z",
+      "ministry_scripture_prayer": "2026-05-31T23:00:40.305Z"
+    },
+    "legacyLastServedAny": "2026-08-23T23:00:09.987Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion",
+        "role_7od6h1yq"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_n0z4axk8",
+    "fullName": "Hugo Granados",
+    "username": "hugogranados",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_closing_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_class"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_closing_prayer": "2026-08-16T23:00:09.950Z"
+    },
+    "legacyLastServedAny": "2026-08-16T23:00:09.950Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_yz0y2xna"
+      ],
+      "sessionIds": [
+        "sess_dom_clase"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_6apfkcg9",
+    "fullName": "Manuel Diaz",
+    "username": "manueldiaz",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_songs"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_songs": "2026-08-09T23:00:13.581Z"
+    },
+    "legacyLastServedAny": "2026-08-09T23:00:13.581Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_cantos",
+        "role_abasbosd",
+        "role_hng3j6z8",
+        "role_bfoerktv",
+        "role_aqnep8u9"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  },
+  {
+    "id": "m_4fnm3yh1",
+    "fullName": "Testing Test",
+    "username": "ttest2",
+    "email": "test@gmail.com",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [],
+    "serviceAvailability": [],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {},
+    "legacyLastServedAny": null,
+    "legacy": {
+      "accessGroup": "member_group",
+      "roleIds": [],
+      "sessionIds": [],
+      "createdAt": "2026-04-18T04:51:50.757Z",
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": true
+  },
+  {
+    "id": "m_8x1tysue",
+    "fullName": "Angel Infante",
+    "username": "angelinfante",
+    "email": "",
+    "phone": "",
+    "active": true,
+    "groups": [
+      "members",
+      "worship"
+    ],
+    "adminAccess": false,
+    "churchAdministrator": false,
+    "ministries": [
+      "ministry_scripture_prayer"
+    ],
+    "serviceAvailability": [
+      "svc_sunday_worship"
+    ],
+    "allowSameDayMultipleServices": false,
+    "unavailability": [],
+    "legacyLastServedByMinistry": {
+      "ministry_scripture_prayer": "2026-07-26T23:04:12.584Z"
+    },
+    "legacyLastServedAny": "2026-07-26T23:04:12.584Z",
+    "legacy": {
+      "accessGroup": "worship_team",
+      "roleIds": [
+        "role_lectura_oracion"
+      ],
+      "sessionIds": [
+        "sess_dom_ador"
+      ],
+      "createdAt": null,
+      "updatedAt": null,
+      "lastSongSelectionsByRole": {}
+    },
+    "legacyTestCandidate": false
+  }
+]

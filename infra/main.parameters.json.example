@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "namePrefix": { "value": "churchv2" },
+    "churchId": { "value": "westbury" },
+    "seedProfile": { "value": "westbury" },
+    "initialOwnerUsername": { "value": "robertogonzalez" },
+    "bootstrapCode": { "value": "REPLACE_AT_DEPLOY_TIME" },
+    "minReplicas": { "value": 0 },
+    "maxReplicas": { "value": 2 },
+    "schedulerCron": { "value": "*/15 * * * *" }
+  }
+}

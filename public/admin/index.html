@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7fb" id="theme-color">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Church Admin</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="app-shell admin-shell">
+    <header class="app-header">
+      <button class="icon-btn" onclick="location.href='/'" aria-label="Back">‹</button>
+      <div class="header-center"><div class="eyebrow">Church App</div><h1 id="admin-title">Admin</h1></div>
+      <span class="icon-btn ghost"></span>
+    </header>
+    <main id="admin-main" class="main"></main>
+    <nav id="admin-nav" class="bottom-nav"></nav>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast" class="toast hidden"></div>
+  <script type="module" src="/assets/admin.js"></script>
+</body>
+</html>
