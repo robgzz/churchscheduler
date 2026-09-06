@@ -64,6 +64,7 @@ var tableList = [
   'VisitorContacts'
   'Petitions'
   'PushSubscriptions'
+  'NotificationLogs'
 ]
 var blobContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
 var tableContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')

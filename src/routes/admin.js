@@ -4,10 +4,20 @@ import { requireAdmin } from '../auth/middleware.js';
 import { tableNames, config } from '../config.js';
 import { listDocs, getDoc, putDoc, deleteDoc, uploadBuffer, nowIso } from '../storage/repository.js';
 import { hashPassword } from '../auth/password.js';
+import { destroyAllUserSessions } from '../auth/sessions.js';
+import { securityEvent } from '../security/audit.js';
 import { generateThreeWeekSchedule, pickReplacement } from '../scheduler/engine.js';
 import { listHistory, appendHistory } from '../scheduler/history.js';
 import { listProgramViews } from '../services/programs.js';
 import { threeWeekWindow } from '../scheduler/dates.js';
+
+function fileSignatureOk(contentType,buf){
+  if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
+  if(contentType==='image/png') return buf.length>=8 && buf.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+  if(contentType==='image/jpeg') return buf.length>=3 && buf[0]===0xff && buf[1]===0xd8 && buf[2]===0xff;
+  if(contentType==='image/webp') return buf.length>=12 && buf.subarray(0,4).toString('ascii')==='RIFF' && buf.subarray(8,12).toString('ascii')==='WEBP';
+  return false;
+}
 
 export const adminRouter=express.Router();
 adminRouter.use(requireAdmin);
@@ -31,7 +41,7 @@ adminRouter.put('/church-profile',async(req,res)=>{
     const buf=Buffer.from(raw,'base64');
     if(buf.length>3*1024*1024) return res.status(413).json({error:'Logo must be 3 MB or smaller',code:'LOGO_TOO_LARGE'});
     const contentType=String(req.body.logo.contentType||'image/png');
-    if(!['image/png','image/jpeg','image/webp'].includes(contentType)) return res.status(400).json({error:'Logo must be PNG, JPG, or WEBP',code:'INVALID_LOGO'});
+    if(!['image/png','image/jpeg','image/webp'].includes(contentType) || !fileSignatureOk(contentType,buf)) return res.status(400).json({error:'Logo must be a valid PNG, JPG, or WEBP file',code:'INVALID_LOGO'});
     const ext=contentType==='image/jpeg'?'jpg':contentType==='image/webp'?'webp':'png';
     const blobName=`${req.churchId}/branding/logo-${Date.now()}.${ext}`;
     next.logo=await uploadBuffer(config.attachmentsContainer,blobName,buf,contentType);
@@ -71,6 +81,7 @@ adminRouter.put('/people/:id',async(req,res)=>{
   const protectedAdmin={adminAccess:old.adminAccess===true,churchAdministrator:old.churchAdministrator===true};
   const doc={...old,...req.body,id:old.id,username:old.username||'',...protectedAdmin,updatedAt:nowIso()};
   await putDoc(tableNames.members,req.churchId,doc.id,doc,{username:doc.username||'',active:doc.active!==false,adminAccess:doc.adminAccess===true,churchAdministrator:doc.churchAdministrator===true});
+  if(doc.username){const user=await getDoc(tableNames.users,req.churchId,doc.username);if(user){user.active=doc.active!==false;user.groups=doc.groups||user.groups||[];await putDoc(tableNames.users,req.churchId,user.username,user,{memberId:doc.id,active:user.active,adminAccess:user.adminAccess===true,churchAdministrator:user.churchAdministrator===true});if(!user.active)await destroyAllUserSessions(req.churchId,user.username);}}
   res.json(doc);
 });
 adminRouter.post('/people/:id/provision-account',async(req,res)=>{
@@ -79,10 +90,11 @@ adminRouter.post('/people/:id/provision-account',async(req,res)=>{
   if(member.churchAdministrator===true && !requesterIsOwner) return res.status(403).json({error:'Only the Church Administrator can change the Church Administrator account.'});
   const username=String(req.body.username || member.username || '').trim().toLowerCase(); const password=String(req.body.password||'');
   if(!username) return res.status(400).json({error:'Username required'});
-  if(password.length<10) return res.status(400).json({error:'Temporary password must be at least 10 characters.'});
+  if(password.length<12) return res.status(400).json({error:'Temporary password must be at least 12 characters.'});
   member.username=username; await putDoc(tableNames.members,req.churchId,member.id,member,{username,active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
   const user={id:username,username,memberId:member.id,active:member.active!==false,groups:member.groups||[],adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true,password:await hashPassword(password),mustChangePassword:req.body.mustChangePassword!==false,createdAt:nowIso()};
   await putDoc(tableNames.users,req.churchId,username,user,{memberId:member.id,active:user.active,adminAccess:user.adminAccess,churchAdministrator:user.churchAdministrator});
+  await destroyAllUserSessions(req.churchId,username); await securityEvent(req,'account_provisioned',{username,memberId:member.id});
   res.status(201).json({ok:true,username});
 });
 
@@ -154,6 +166,7 @@ adminRouter.post('/content',async(req,res)=>{
     if(!['application/pdf','image/jpeg','image/png'].includes(contentType)) return res.status(400).json({error:'Attachments must be PDF, JPG/JPEG, or PNG.',code:'INVALID_ATTACHMENT_TYPE'});
     const raw=String(req.body.file.base64).replace(/^data:[^;]+;base64,/, ''); const buf=Buffer.from(raw,'base64');
     if(buf.length>8*1024*1024) return res.status(413).json({error:'Attachment must be 8 MB or smaller.',code:'ATTACHMENT_TOO_LARGE'});
+    if(!fileSignatureOk(contentType,buf)) return res.status(400).json({error:'Attachment contents do not match the allowed PDF/JPG/PNG type.',code:'INVALID_ATTACHMENT_CONTENT'});
     const safeName=String(req.body.file.fileName||'attachment').replace(/[^a-zA-Z0-9._-]/g,'_'); const blobName=`${req.churchId}/${id}/${safeName}`;
     doc.attachment={...(await uploadBuffer(config.attachmentsContainer,blobName,buf,contentType)),fileName:safeName};
   }

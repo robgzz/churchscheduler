@@ -1,0 +1,22 @@
+name: Security Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '23 7 * * 1'
+permissions:
+  contents: read
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm install --package-lock-only
+      - run: npm audit --audit-level=high
+      - run: npm test
+      - run: npm run lint:syntax

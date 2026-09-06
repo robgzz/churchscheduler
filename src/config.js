@@ -13,7 +13,12 @@ export const config = {
   backupsContainer: process.env.AZURE_BLOB_BACKUPS_CONTAINER || 'backups',
   cookieSecure: String(process.env.COOKIE_SECURE || '').toLowerCase() === 'true' || process.env.NODE_ENV === 'production',
   sessionDays: Number(process.env.SESSION_DAYS || 30),
-  defaultTimezone: process.env.DEFAULT_TIMEZONE || 'America/Chicago'
+  defaultTimezone: process.env.DEFAULT_TIMEZONE || 'America/Chicago',
+  acsEndpoint: process.env.ACS_ENDPOINT || '',
+  acsEmailEnabled: String(process.env.ACS_EMAIL_ENABLED || '').toLowerCase() === 'true',
+  acsEmailSender: process.env.ACS_EMAIL_SENDER || '',
+  acsSmsEnabled: String(process.env.ACS_SMS_ENABLED || '').toLowerCase() === 'true',
+  acsSmsFromNumber: process.env.ACS_SMS_FROM_NUMBER || ''
 };
 
 export const tableNames = {
@@ -31,5 +36,6 @@ export const tableNames = {
   songs: 'Songs',
   visitorContacts: 'VisitorContacts',
   petitions: 'Petitions',
-  pushSubscriptions: 'PushSubscriptions'
+  pushSubscriptions: 'PushSubscriptions',
+  notificationLogs: 'NotificationLogs'
 };

@@ -15,17 +15,37 @@ import { publicRouter } from './routes/public.js';
 import { memberRouter } from './routes/member.js';
 import { adminRouter } from './routes/admin.js';
 import { ownerRouter } from './routes/owner.js';
+import { requireCsrf, sameOriginWrite } from './security/csrf.js';
 
 const app=express();
 app.set('trust proxy',1);
 app.disable('x-powered-by');
-app.use(helmet({ contentSecurityPolicy:false, crossOriginEmbedderPolicy:false }));
+app.use(helmet({
+  contentSecurityPolicy:{directives:{
+    defaultSrc:["'self'"],
+    scriptSrc:["'self'"],
+    styleSrc:["'self'","'unsafe-inline'"],
+    imgSrc:["'self'",'data:','blob:'],
+    connectSrc:["'self'"],
+    fontSrc:["'self'",'data:'],
+    objectSrc:["'none'"],
+    baseUri:["'self'"],
+    frameAncestors:["'none'"],
+    formAction:["'self'"]
+  }},
+  crossOriginEmbedderPolicy:false,
+  referrerPolicy:{policy:'no-referrer'},
+  hsts: config.nodeEnv==='production' ? {maxAge:31536000,includeSubDomains:true,preload:true} : false
+}));
+app.use((_req,res,next)=>{res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=(), payment=(), usb=()');next();});
 app.use(compression({threshold:1024}));
 app.use(express.json({limit:'12mb'}));
 app.use(cookieParser());
 app.use(localizationMiddleware);
+app.use(sameOriginWrite);
 app.use(attachIdentity);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'2.3.0'}));
+app.use(requireCsrf);
+app.get('/healthz',(req,res)=>res.json({ok:true,version:'2.5.0'}));
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);

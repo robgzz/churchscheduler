@@ -1,10 +1,10 @@
-# Church Scheduler V2.3
+# Church Scheduler V2.4
 
 Mobile-first church scheduling PWA designed for Azure Container Apps + Azure Blob/Table Storage.
 
 This repository intentionally stays on **vanilla HTML/CSS/JavaScript** for V2. React/Vite can be evaluated later without changing the Azure API/data model.
 
-## V2.3 highlights
+## V2.4 highlights
 
 - A program is only **Ready** when all positions are filled **and every Cantos assignment has saved song selections**.
 - Admins can deliberately override normal eligibility and assign any active member; the override is confirmed and audited.
@@ -13,7 +13,7 @@ This repository intentionally stays on **vanilla HTML/CSS/JavaScript** for V2. R
 - Proactive unavailability is a prominent action on Home.
 - Major visual refresh with a warm Westbury-inspired light theme and cleaner mobile program editing.
 
-See `RELEASE-NOTES-V2.3.0.md` for details.
+See `RELEASE-NOTES-V2.4.0.md` for details.
 
 ## What V2 changes
 
@@ -197,3 +197,30 @@ V2.2 keeps the existing Vanilla JS PWA and Azure data model while improving clar
 The expected church size of 200+ members remains modest for this architecture. The optimization focus is short usage bursts around service times rather than high continuous traffic.
 
 Azure Communication Services automated SMS/email is still intentionally **not provisioned in V2.2**. Native Share, WhatsApp, and user-initiated SMS sharing remain available.
+
+## V2.5 Azure Communication Services
+
+V2.5 includes an optional, modular ACS deployment for Email and SMS. The app remains fully functional if communications are disabled.
+
+Configured email sender after DNS verification: `WestburyChurchofChrist@exonuvia.com`.
+
+Start with:
+
+```powershell
+.\scripts\deploy-communications.ps1
+.\scripts\acs-status.ps1
+```
+
+Add the exact Azure-provided DNS records to `exonuvia.com`. After Domain, SPF, DKIM and DKIM2 are verified:
+
+```powershell
+.\scripts\enable-acs.ps1
+```
+
+For SMS, acquire and verify an SMS-capable toll-free number in the Azure Communication Services portal, then:
+
+```powershell
+.\scripts\enable-acs.ps1 -EnableSms -SmsFromNumber "+1XXXXXXXXXX"
+```
+
+See `docs/AZURE-COMMUNICATION-SERVICES-V2.5.md` for the complete staged procedure.

@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { tableNames, config } from '../config.js';
 import { getDoc, listDocs, putDoc, nowIso, downloadBuffer } from '../storage/repository.js';
+import { publicWriteLimiter } from '../security/rateLimit.js';
 
 export const publicRouter=express.Router();
 publicRouter.get('/bootstrap',async(req,res)=>{
@@ -25,7 +26,7 @@ publicRouter.get('/church-logo',async(req,res)=>{
   res.redirect(church?.logoUrl||'/assets/church-logo.png');
 });
 
-publicRouter.post('/visitor-contact',async(req,res)=>{
+publicRouter.post('/visitor-contact',publicWriteLimiter,async(req,res)=>{
   const id=`visitor_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`;
   const doc={id,kind:'visitor_contact',fullName:String(req.body.fullName||'').trim(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),address:String(req.body.address||'').trim(),firstVisit:req.body.firstVisit===true,prayerRequest:String(req.body.prayerRequest||'').trim(),interests:Array.isArray(req.body.interests)?req.body.interests:[],createdAt:nowIso(),status:'new'};
   if(!doc.fullName) return res.status(400).json({error:'Name is required.'});
@@ -40,5 +41,5 @@ publicRouter.get('/files/:contentId',async(req,res)=>{
   const isMember = groups.includes('members') || groups.includes('worship') || req.identity?.user?.adminAccess===true || req.identity?.user?.churchAdministrator===true;
   if(!isPublic && !isMember) return res.status(403).json({error:'Access denied'});
   const f=await downloadBuffer(config.attachmentsContainer,doc.attachment.blobName);
-  res.type(f.contentType); res.setHeader('Content-Disposition',`inline; filename="${(doc.attachment.fileName||'file').replace(/"/g,'')}"`); res.send(f.buffer);
+  res.type(f.contentType); res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'; sandbox"); res.setHeader('Content-Disposition',`inline; filename="${(doc.attachment.fileName||'file').replace(/[\r\n"]/g,'')}"`); res.send(f.buffer);
 });

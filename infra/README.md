@@ -63,3 +63,8 @@ Add the printed values as GitHub Actions repository secrets. Pushes to `main` th
 `validate-infra.ps1` uses the Azure CLI's Bicep compiler to validate/compile `main.bicep` without deploying resources.
 
 A real Azure deployment still depends on your subscription permissions, regional Container Apps availability/quotas, and RBAC permission to create role assignments.
+
+
+## V2.5 communications infrastructure
+
+`communications.bicep` is deliberately separate from `main.bicep`. This lets you add or change ACS without reconciling the scheduler/storage/container infrastructure. Use `scripts/deploy-communications.ps1` for ACS provisioning and `scripts/enable-acs.ps1` only after email DNS verification is complete.

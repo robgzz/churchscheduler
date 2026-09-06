@@ -4,7 +4,7 @@ import { getDoc } from '../storage/repository.js';
 
 export async function attachIdentity(req, res, next){
   try {
-    const churchId = String(req.headers['x-church-id'] || config.churchId);
+    const churchId = config.churchId; // tenant is server-bound; never trust a browser-supplied church id
     req.churchId = churchId;
     const token = req.cookies?.[SESSION_COOKIE];
     const session = await readSession(churchId, token);
