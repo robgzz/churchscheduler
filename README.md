@@ -228,3 +228,6 @@ For SMS, acquire and verify an SMS-capable toll-free number in the Azure Communi
 ```
 
 See `docs/AZURE-COMMUNICATION-SERVICES-V3.0.md` for the complete staged procedure.
+
+## V3.2 additions
+See `RELEASE-NOTES-V3.3.0.md` for Program Admin on Duty, operational notifications, song-selection history, and same-service song de-duplication.

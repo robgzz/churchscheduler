@@ -59,10 +59,15 @@ jobs:
 
       - name: Deploy web app
         run: |
+          FQDN=$(az containerapp show \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ secrets.AZURE_CONTAINER_APP_NAME }}" \
+            --query properties.configuration.ingress.fqdn -o tsv)
           az containerapp update \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --name "${{ secrets.AZURE_CONTAINER_APP_NAME }}" \
             --image "$IMAGE" \
+            --set-env-vars "PUBLIC_APP_URL=https://$FQDN" \
             --output none
 
       - name: Deploy scheduler job image

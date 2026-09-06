@@ -14,7 +14,7 @@ publicRouter.get('/bootstrap',async(req,res)=>{
   const canSeeNews=groups.includes('members') || groups.includes('worship') || req.identity?.user?.adminAccess===true || req.identity?.user?.churchAdministrator===true;
   const allowedKinds=canSeeNews ? ['announcement','bulletin'] : ['bulletin'];
   const visible=content.filter(x=>x.published!==false && allowedKinds.includes(x.kind)).sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt)));
-  const churchView=church?{...church,logoUrl:church.logo?.blobName?`/api/public/church-logo?v=${encodeURIComponent(church.updatedAt||church.logo.blobName)}`:(church.logoUrl||'/assets/church-logo.png')}:church;
+  const churchView=church?{...church,logoUrl:church.logo?.blobName?`/api/public/church-logo?v=${encodeURIComponent(church.updatedAt||church.logo.blobName)}`:(church.logoUrl||'')}:church;
   res.json({church:churchView,services:services.filter(s=>s.active!==false),content:visible});
 });
 
@@ -24,7 +24,8 @@ publicRouter.get('/church-logo',async(req,res)=>{
     const f=await downloadBuffer(config.attachmentsContainer,church.logo.blobName);
     res.type(f.contentType); res.setHeader('Cache-Control','public, max-age=300'); return res.send(f.buffer);
   }
-  res.redirect(church?.logoUrl||'/assets/church-logo.png');
+  if(church?.logoUrl) return res.redirect(church.logoUrl);
+  res.status(204).end();
 });
 
 publicRouter.post('/visitor-contact',publicWriteLimiter,async(req,res)=>{
@@ -35,6 +36,16 @@ publicRouter.post('/visitor-contact',publicWriteLimiter,async(req,res)=>{
   await enqueueAdminAlert(req.churchId,{type:'visitor',id,summary:`New visitor form from ${doc.fullName}. Open the Church Scheduler Admin console.`});
   res.status(201).json({ok:true,id});
 });
+publicRouter.post('/member-access-request',publicWriteLimiter,async(req,res)=>{
+  const id=`access_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`;
+  const firstName=String(req.body.firstName||'').trim(),lastName=String(req.body.lastName||'').trim();
+  const doc={id,kind:'member_access_request',fullName:`${firstName} ${lastName}`.trim(),firstName,lastName,email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),createdAt:nowIso(),status:'new'};
+  if(!firstName||!lastName) return res.status(400).json({error:'First and last name are required.',code:'NAME_REQUIRED'});
+  await putDoc(tableNames.visitorContacts,req.churchId,id,doc,{status:'new',createdAt:doc.createdAt});
+  await enqueueAdminAlert(req.churchId,{type:'member_access_request',id,summary:`New member access request from ${doc.fullName}. Open the Admin console.`});
+  res.status(201).json({ok:true,id});
+});
+
 publicRouter.get('/files/:contentId',async(req,res)=>{
   const doc=await getDoc(tableNames.content,req.churchId,req.params.contentId);
   if(!doc?.attachment?.blobName) return res.status(404).json({error:'File not found'});

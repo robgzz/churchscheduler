@@ -12,6 +12,7 @@ import { listProgramViews } from '../services/programs.js';
 import { threeWeekWindow } from '../scheduler/dates.js';
 import { enqueueAnnouncement } from '../communications/notifications.js';
 import { auditRows, toCsv, toExcelXml, toPdf } from '../services/auditExport.js';
+import { syncProgramStatus } from '../communications/programAdmin.js';
 
 function fileSignatureOk(contentType,buf){
   if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
@@ -50,7 +51,7 @@ adminRouter.put('/church-profile',async(req,res)=>{
     next.logoUrl='/api/public/church-logo';
   }
   await putDoc(tableNames.settings,req.churchId,'church',next);
-  res.json({...next,logoUrl:next.logo?.blobName?'/api/public/church-logo':(next.logoUrl||'/assets/church-logo.png')});
+  res.json({...next,logoUrl:next.logo?.blobName?'/api/public/church-logo':(next.logoUrl||'')});
 });
 
 adminRouter.get('/dashboard',async(req,res)=>{
@@ -139,6 +140,7 @@ adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
   assignment.currentMemberId=memberId; assignment.assignedAt=nowIso(); assignment.appNotificationAt=assignment.assignedAt; assignment.songIds=[]; assignment.songsUpdatedAt=null; assignment.songsUpdatedBy=null; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:memberId,ministryId:assignment.ministryId,programId:assignment.programId});
   await appendHistory(req.churchId,{eventType:manualOverride&&!eligible?'assignment.admin_override':'assignment.admin_reassigned',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId,dateISO:assignment.dateISO,previousMemberId:previous,newMemberId:memberId,penaltyEligible:false,source:'admin',details:{manualOverride:manualOverride&&!eligible,eligibilityOverridden:manualOverride&&!eligible}});
+  await syncProgramStatus(req.churchId,{programId:assignment.programId});
   res.json({...assignment,manualOverride:manualOverride&&!eligible});
 });
 

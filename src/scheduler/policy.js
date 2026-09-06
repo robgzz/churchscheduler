@@ -4,11 +4,15 @@ export function isUnavailable(member,dateISO){
   return (member.unavailability || []).some(r=>r?.from && r?.to && r.from<=dateISO && dateISO<=r.to);
 }
 
-export function hardEligible(member,{ministryId,serviceId,dateISO,assignedInProgram=new Set(),sameDayAssignments=[],excludeMemberIds=new Set()}){
+export function hardEligible(member,{ministryId,serviceId,assignmentKey='',dateISO,assignedInProgram=new Set(),sameDayAssignments=[],excludeMemberIds=new Set()}){
   if (!member || member.active===false) return false;
   if (excludeMemberIds.has(member.id)) return false;
   if (!(member.ministries || []).includes(ministryId)) return false;
   if (!(member.serviceAvailability || []).includes(serviceId)) return false;
+  if(member.assignmentEligibilityMode==='explicit' && Array.isArray(member.assignmentEligibility) && member.assignmentEligibility.length){
+    const token=`${serviceId}::${assignmentKey}`;
+    if(!assignmentKey || !member.assignmentEligibility.includes(token)) return false;
+  }
   if (isUnavailable(member,dateISO)) return false;
   if (assignedInProgram.has(member.id)) return false;
   const sameDay=sameDayAssignments.filter(a=>a.currentMemberId===member.id);

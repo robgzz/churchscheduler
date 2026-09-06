@@ -34,6 +34,8 @@ export async function seedIfNeeded(churchId=config.churchId){
     readSeed('church.json'),readSeed('ministries.json'),readSeed('services.json'),readSeed('templates.json'),readSeed('members.json'),readSeed('songs.json')
   ]);
 
+  if(String(church.id||'') !== String(churchId)) throw new Error(`Seed profile ${config.seedProfile} belongs to ${church.id}, not ${churchId}. Refusing cross-church seed.`);
+
   const existingChurch=await getDoc(tableNames.settings,churchId,'church');
   if(!existingChurch){
     await putDoc(tableNames.settings,churchId,'church',{...church,id:'church',seededAt:nowIso()});
@@ -44,7 +46,7 @@ export async function seedIfNeeded(churchId=config.churchId){
       churchName:existingChurch.churchName||church.churchName,
       churchNameEn:existingChurch.churchNameEn||existingChurch.churchName||church.churchNameEn||church.churchName,
       churchNameEs:existingChurch.churchNameEs||existingChurch.churchName||church.churchNameEs||church.churchName,
-      logoUrl:existingChurch.logoUrl||church.logoUrl||'/assets/church-logo.png',
+      logoUrl:existingChurch.logoUrl||church.logoUrl||'',
       updatedAt:nowIso()
     };
     await putDoc(tableNames.settings,churchId,'church',merged);

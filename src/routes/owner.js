@@ -5,6 +5,9 @@ import { getDoc, putDoc, listDocs, nowIso } from '../storage/repository.js';
 import { destroyAllUserSessions } from '../auth/sessions.js';
 import { securityEvent } from '../security/audit.js';
 import { communicationStatus, sendEmail, sendSms, lastNotificationResults } from '../communications/service.js';
+import { setProgramAdmin, getProgramAdmin, syncProgramStatus } from '../communications/programAdmin.js';
+import { appendHistory } from '../scheduler/history.js';
+import { parseTabularUpload, importSongs, importMembersAndAssignments, rowsToCsv, rowsToExcelXml, songTemplateRows, memberTemplateRows } from '../services/bulkImport.js';
 
 export const ownerRouter=express.Router();
 ownerRouter.use(requireOwner);
@@ -25,6 +28,21 @@ ownerRouter.put('/people/:id/admin-access',async(req,res)=>{
   }
   res.json({ok:true,adminAccess:member.adminAccess});
 });
+
+ownerRouter.get('/program-admin',async(req,res)=>{
+  const [current,members]=await Promise.all([
+    getProgramAdmin(req.churchId),
+    listDocs(tableNames.members,req.churchId,{max:3000})
+  ]);
+  const admins=members.filter(m=>m.active!==false&&(m.adminAccess===true||m.churchAdministrator===true)).sort((a,b)=>String(a.fullName||'').localeCompare(String(b.fullName||''),'es'));
+  res.json({current:current?{id:current.id,fullName:current.fullName,email:current.email||'',phone:current.phone||''}:null,admins:admins.map(m=>({id:m.id,fullName:m.fullName,email:m.email||'',phone:m.phone||'',churchAdministrator:m.churchAdministrator===true}))});
+});
+ownerRouter.put('/program-admin',async(req,res)=>{
+  const member=await setProgramAdmin(req.churchId,String(req.body?.memberId||''),req.identity?.member?.id||'');
+  await syncProgramStatus(req.churchId);
+  res.json({ok:true,current:{id:member.id,fullName:member.fullName,email:member.email||'',phone:member.phone||''}});
+});
+
 ownerRouter.get('/scheduler-audit',async(req,res)=>{
   const rows=await listDocs(tableNames.history,req.churchId,{filter:`eventType eq 'scheduler.decision'`,max:Number(req.query.max||200)});
   res.json(rows.sort((a,b)=>String(b.occurredAt).localeCompare(String(a.occurredAt))));
@@ -39,8 +57,31 @@ ownerRouter.post('/communications/test',async(req,res,next)=>{
     const member=memberId?await getDoc(tableNames.members,req.churchId,memberId):null;
     if(!member)return res.status(400).json({error:'Select an active member to test.'});
     const eventKey=`admin-test:${channel}:${Date.now()}`;
-    if(channel==='email'){if(!member.email)return res.status(400).json({error:'Selected member does not have an email address.'});return res.json(await sendEmail({churchId:req.churchId,to:member.email,displayName:member.fullName||'',subject:req.body.subject||'Westbury Church of Christ test',text:req.body.message||'Azure Communication Services email is working.',eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
-    if(channel==='sms'){if(!member.phone)return res.status(400).json({error:'Selected member does not have a phone number.'});let phone=String(member.phone).replace(/[^\d+]/g,'');if(!phone.startsWith('+'))phone=phone.length===10?`+1${phone}`:`+${phone}`;return res.json(await sendSms({churchId:req.churchId,to:phone,message:req.body.message||'Westbury Church of Christ: Azure Communication Services SMS is working.',eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
+    if(channel==='email'){if(!member.email)return res.status(400).json({error:'Selected member does not have an email address.'});const church=await getDoc(tableNames.settings,req.churchId,'church')||{};const churchName=church.churchName||'Church';return res.json(await sendEmail({churchId:req.churchId,to:member.email,displayName:member.fullName||'',subject:req.body.subject||`${churchName} test`,text:req.body.message||'Azure Communication Services email is working.',eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
+    if(channel==='sms'){if(!member.phone)return res.status(400).json({error:'Selected member does not have a phone number.'});const church=await getDoc(tableNames.settings,req.churchId,'church')||{};const churchName=church.churchName||'Church';let phone=String(member.phone).replace(/[^\d+]/g,'');if(!phone.startsWith('+'))phone=phone.length===10?`+1${phone}`:`+${phone}`;return res.json(await sendSms({churchId:req.churchId,to:phone,message:req.body.message||`${churchName}: Azure Communication Services SMS is working.`,eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
     return res.status(400).json({error:'channel must be email or sms'});
   }catch(e){next(e);}
 });
+
+
+function decodeImportFile(file){
+  if(!file?.base64) throw Object.assign(new Error('Select a CSV or Excel file.'),{statusCode:400});
+  const raw=String(file.base64).replace(/^data:[^;]+;base64,/, '');
+  const buffer=Buffer.from(raw,'base64');
+  if(buffer.length>8*1024*1024) throw Object.assign(new Error('Import file must be 8 MB or smaller.'),{statusCode:413});
+  return {fileName:String(file.fileName||'import.csv'),contentType:String(file.contentType||''),buffer};
+}
+function sendTableExport(res,{rows,format,name,sheetName}){
+  if(format==='csv'){res.type('text/csv');res.setHeader('Content-Disposition',`attachment; filename=${name}.csv`);return res.send(rowsToCsv(rows));}
+  if(format==='excel'||format==='xls'){res.type('application/vnd.ms-excel');res.setHeader('Content-Disposition',`attachment; filename=${name}.xls`);return res.send(rowsToExcelXml(rows,sheetName));}
+  return res.status(400).json({error:'format must be csv or excel'});
+}
+ownerRouter.get('/songs/export',async(req,res)=>{
+  const songs=(await listDocs(tableNames.songs,req.churchId,{max:10000})).sort((a,b)=>Number(a.number||0)-Number(b.number||0));
+  const rows=songs.map(s=>({Number:s.number||'','Title Spanish':s.titleEs||s.title||'','Title English':s.titleEn||'',Active:s.active===false?'No':'Yes'}));
+  return sendTableExport(res,{rows,format:String(req.query.format||'csv').toLowerCase(),name:'songs',sheetName:'Songs'});
+});
+ownerRouter.get('/songs/template',(req,res)=>sendTableExport(res,{rows:songTemplateRows(),format:String(req.query.format||'csv').toLowerCase(),name:'songs-import-template',sheetName:'Songs'}));
+ownerRouter.post('/songs/import',async(req,res,next)=>{try{const file=decodeImportFile(req.body?.file);const rows=await parseTabularUpload(file);const result=await importSongs(req.churchId,rows);await securityEvent(req,'songs_bulk_import',{...result,fileName:file.fileName});await appendHistory(req.churchId,{eventType:'bulk_import.songs',memberId:req.identity?.member?.id||'',source:'church_administrator',details:{...result,fileName:file.fileName}});res.json({ok:true,...result});}catch(e){next(e);}});
+ownerRouter.get('/members/template',(req,res)=>sendTableExport(res,{rows:memberTemplateRows(),format:String(req.query.format||'csv').toLowerCase(),name:'members-service-assignments-template',sheetName:'Members'}));
+ownerRouter.post('/members/import',async(req,res,next)=>{try{const file=decodeImportFile(req.body?.file);const rows=await parseTabularUpload(file);const result=await importMembersAndAssignments(req.churchId,rows);await securityEvent(req,'members_assignments_bulk_import',{...result,fileName:file.fileName});await appendHistory(req.churchId,{eventType:'bulk_import.members_assignments',memberId:req.identity?.member?.id||'',source:'church_administrator',details:{...result,fileName:file.fileName}});res.json({ok:true,...result});}catch(e){next(e);}});

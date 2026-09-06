@@ -79,7 +79,7 @@ export async function generateThreeWeekSchedule(churchId,{source='manual'}={}){
         const existingAssignment=existingByKey.get(unit.key);
         if (existingAssignment?.locked || existingAssignment?.currentMemberId) return {unit,existingAssignment,candidates:[]};
         const candidates=ctx.members.filter(m=>hardEligible(m,{
-          ministryId:unit.ministryId,serviceId:service.id,dateISO,assignedInProgram,
+          ministryId:unit.ministryId,serviceId:service.id,assignmentKey:unit.key,dateISO,assignedInProgram,
           sameDayAssignments:sameDayAssignments(allAssignments,dateISO)
         }));
         return {unit,existingAssignment,candidates};
@@ -90,7 +90,7 @@ export async function generateThreeWeekSchedule(churchId,{source='manual'}={}){
         const current=existingByKey.get(unit.key);
         if (current?.locked || current?.currentMemberId) continue;
         const candidates=ctx.members.filter(m=>hardEligible(m,{
-          ministryId:unit.ministryId,serviceId:service.id,dateISO,assignedInProgram,
+          ministryId:unit.ministryId,serviceId:service.id,assignmentKey:unit.key,dateISO,assignedInProgram,
           sameDayAssignments:sameDayAssignments(allAssignments,dateISO)
         }));
         const ranking=rankCandidates(candidates,{...ctx,ministryId:unit.ministryId,today:window.today});
@@ -138,7 +138,7 @@ export async function pickReplacement(churchId,assignment,excludeMemberIds=new S
   const programAssignments=await listDocs(tableNames.assignments,churchId,{filter:`programId eq '${assignment.programId}'`,max:100});
   const assignedInProgram=new Set(programAssignments.filter(a=>a.currentMemberId && a.id!==assignment.id).map(a=>a.currentMemberId));
   const candidates=ctx.members.filter(m=>hardEligible(m,{
-    ministryId:assignment.ministryId,serviceId:assignment.serviceId,dateISO:assignment.dateISO,assignedInProgram,
+    ministryId:assignment.ministryId,serviceId:assignment.serviceId,assignmentKey:assignment.assignmentKey,dateISO:assignment.dateISO,assignedInProgram,
     sameDayAssignments:sameDayAssignments(ctx.scheduled,assignment.dateISO),excludeMemberIds
   }));
   const ranking=rankCandidates(candidates,{...ctx,ministryId:assignment.ministryId,today:window.today});

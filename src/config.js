@@ -18,7 +18,8 @@ export const config = {
   acsEmailEnabled: String(process.env.ACS_EMAIL_ENABLED || '').toLowerCase() === 'true',
   acsEmailSender: process.env.ACS_EMAIL_SENDER || '',
   acsSmsEnabled: String(process.env.ACS_SMS_ENABLED || '').toLowerCase() === 'true',
-  acsSmsFromNumber: process.env.ACS_SMS_FROM_NUMBER || ''
+  acsSmsFromNumber: process.env.ACS_SMS_FROM_NUMBER || '',
+  publicAppUrl: String(process.env.PUBLIC_APP_URL || '').replace(/\/$/,'')
 };
 
 export const tableNames = {
@@ -38,5 +39,6 @@ export const tableNames = {
   petitions: 'Petitions',
   pushSubscriptions: 'PushSubscriptions',
   notificationLogs: 'NotificationLogs',
-  notificationQueue: 'NotificationQueue'
+  notificationQueue: 'NotificationQueue',
+  appNotifications: 'AppNotifications'
 };
