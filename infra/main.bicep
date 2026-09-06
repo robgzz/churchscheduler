@@ -37,8 +37,8 @@ param minReplicas int = 0
 @maxValue(10)
 param maxReplicas int = 4
 
-@description('Scheduler job cron in UTC. Default runs every 15 minutes.')
-param schedulerCron string = '*/15 * * * *'
+@description('Scheduler job cron in UTC. Default runs every 5 minutes.')
+param schedulerCron string = '*/5 * * * *'
 
 var suffix = uniqueString(subscription().id, resourceGroup().id)
 var storageName = take(toLower(replace('st${namePrefix}${suffix}', '-', '')), 24)
@@ -65,6 +65,7 @@ var tableList = [
   'Petitions'
   'PushSubscriptions'
   'NotificationLogs'
+  'NotificationQueue'
 ]
 var blobContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
 var tableContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')

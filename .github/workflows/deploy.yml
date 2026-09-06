@@ -71,6 +71,7 @@ jobs:
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --name "${{ secrets.AZURE_CONTAINER_JOB_NAME }}" \
             --image "$IMAGE" \
+            --cron-expression "*/5 * * * *" \
             --output none
 
       - name: Health check

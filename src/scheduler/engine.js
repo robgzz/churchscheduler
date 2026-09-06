@@ -99,7 +99,7 @@ export async function generateThreeWeekSchedule(churchId,{source='manual'}={}){
           id:aid,churchId,programId:pid,serviceId:service.id,dateISO,assignmentKey:unit.key,ministryId:unit.ministryId,
           originalMemberId:current?.originalMemberId || selected?.id || null,
           currentMemberId:selected?.id || null,status:selected?'scheduled':'unfilled',locked:false,
-          replacements:current?.replacements || [],songIds:current?.songIds || [],songsUpdatedAt:current?.songsUpdatedAt || null,songsUpdatedBy:current?.songsUpdatedBy || null,createdAt:current?.createdAt || nowIso(),updatedAt:nowIso()
+          replacements:current?.replacements || [],songIds:current?.songIds || [],songsUpdatedAt:current?.songsUpdatedAt || null,songsUpdatedBy:current?.songsUpdatedBy || null,assignedAt:current?.assignedAt || nowIso(),appNotificationAt:current?.appNotificationAt || current?.assignedAt || nowIso(),createdAt:current?.createdAt || nowIso(),updatedAt:nowIso()
         };
         await putDoc(tableNames.assignments,churchId,aid,assignment,{serviceId:service.id,dateISO,status:assignment.status,currentMemberId:assignment.currentMemberId || '',ministryId:unit.ministryId,programId:pid});
         existingByKey.set(unit.key,assignment);

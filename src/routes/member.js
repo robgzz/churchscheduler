@@ -8,6 +8,7 @@ import { addUnavailability } from '../services/unavailability.js';
 import { requestReplacement } from '../services/replacements.js';
 import { threeWeekWindow } from '../scheduler/dates.js';
 import { appendHistory } from '../scheduler/history.js';
+import { enqueueAdminAlert } from '../communications/notifications.js';
 
 export const memberRouter=express.Router();
 memberRouter.use(requireLogin);
@@ -29,6 +30,7 @@ memberRouter.post('/petitions',requireGroup('members'),async(req,res)=>{
   const doc={id,memberId:req.identity.member.id,memberName:req.identity.member.fullName,text:String(req.body.text||'').trim(),private:req.body.private!==false,status:'new',createdAt:nowIso()};
   if(!doc.text) return res.status(400).json({error:'Petition text is required.',code:'PETITION_REQUIRED'});
   await putDoc(tableNames.petitions,req.churchId,id,doc,{memberId:doc.memberId,status:'new',createdAt:doc.createdAt});
+  await enqueueAdminAlert(req.churchId,{type:'petition',id,summary:`New prayer petition from ${doc.memberName}. Open the Church Scheduler Admin console.`});
   res.status(201).json({ok:true,id});
 });
 memberRouter.get('/songs',requireGroup('worship'),async(req,res)=>res.json((await listDocs(tableNames.songs,req.churchId,{max:2000})).filter(s=>s.active!==false)));

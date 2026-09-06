@@ -10,6 +10,8 @@ import { generateThreeWeekSchedule, pickReplacement } from '../scheduler/engine.
 import { listHistory, appendHistory } from '../scheduler/history.js';
 import { listProgramViews } from '../services/programs.js';
 import { threeWeekWindow } from '../scheduler/dates.js';
+import { enqueueAnnouncement } from '../communications/notifications.js';
+import { auditRows, toCsv, toExcelXml, toPdf } from '../services/auditExport.js';
 
 function fileSignatureOk(contentType,buf){
   if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
@@ -105,6 +107,7 @@ adminRouter.get('/schedule/programs',async(req,res)=>{
   res.json(await listProgramViews(req.churchId,{from:w.start,to:w.end}));
 });
 adminRouter.get('/history',async(req,res)=>res.json(await listHistory(req.churchId,{from:req.query.from||'',to:req.query.to||'',memberId:req.query.memberId||'',eventType:req.query.eventType||'',max:Number(req.query.max||500)})));
+adminRouter.get('/history/export',async(req,res,next)=>{try{const format=String(req.query.format||'csv').toLowerCase();const rows=await auditRows(req.churchId,{from:req.query.from||'',to:req.query.to||'',memberId:req.query.memberId||'',eventType:req.query.eventType||'',max:Number(req.query.max||5000)});const stamp=new Date().toISOString().slice(0,10);if(format==='csv'){res.type('text/csv');res.setHeader('Content-Disposition',`attachment; filename=church-audit-${stamp}.csv`);return res.send(toCsv(rows));}if(format==='xls'||format==='excel'){res.type('application/vnd.ms-excel');res.setHeader('Content-Disposition',`attachment; filename=church-audit-${stamp}.xls`);return res.send(toExcelXml(rows));}if(format==='pdf'){res.type('application/pdf');res.setHeader('Content-Disposition',`attachment; filename=church-audit-${stamp}.pdf`);return res.send(await toPdf(rows));}res.status(400).json({error:'format must be csv, excel, or pdf'});}catch(e){next(e);}});
 adminRouter.get('/schedule/assignments/:id/candidates',async(req,res)=>{
   const assignment=await getDoc(tableNames.assignments,req.churchId,req.params.id);
   if(!assignment) return res.status(404).json({error:'Assignment not found'});
@@ -133,7 +136,7 @@ adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
   if(!eligible && !manualOverride) return res.status(409).json({error:'Selected member is not eligible for this ministry/service/date.',code:'MANUAL_OVERRIDE_REQUIRED'});
   const previous=assignment.currentMemberId||'';
   if(!assignment.originalMemberId) assignment.originalMemberId=memberId;
-  assignment.currentMemberId=memberId; assignment.songIds=[]; assignment.songsUpdatedAt=null; assignment.songsUpdatedBy=null; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
+  assignment.currentMemberId=memberId; assignment.assignedAt=nowIso(); assignment.appNotificationAt=assignment.assignedAt; assignment.songIds=[]; assignment.songsUpdatedAt=null; assignment.songsUpdatedBy=null; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:memberId,ministryId:assignment.ministryId,programId:assignment.programId});
   await appendHistory(req.churchId,{eventType:manualOverride&&!eligible?'assignment.admin_override':'assignment.admin_reassigned',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId,dateISO:assignment.dateISO,previousMemberId:previous,newMemberId:memberId,penaltyEligible:false,source:'admin',details:{manualOverride:manualOverride&&!eligible,eligibilityOverridden:manualOverride&&!eligible}});
   res.json({...assignment,manualOverride:manualOverride&&!eligible});
@@ -160,7 +163,7 @@ adminRouter.put('/templates/:id',async(req,res)=>{
 adminRouter.get('/content',async(req,res)=>res.json(await listDocs(tableNames.content,req.churchId,{max:500})));
 adminRouter.post('/content',async(req,res)=>{
   const id=req.body.id || `content_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-  const doc={id,kind:String(req.body.kind||'announcement'),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),body:String(req.body.bodyEs||req.body.body||req.body.bodyEn||'').trim(),bodyEs:String(req.body.bodyEs||req.body.body||'').trim(),bodyEn:String(req.body.bodyEn||req.body.body||'').trim(),published:req.body.published!==false,publishedAt:nowIso(),createdAt:nowIso()};
+  const doc={id,kind:String(req.body.kind||'announcement'),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),body:String(req.body.bodyEs||req.body.body||req.body.bodyEn||'').trim(),bodyEs:String(req.body.bodyEs||req.body.body||'').trim(),bodyEn:String(req.body.bodyEn||req.body.body||'').trim(),address:String(req.body.address||'').trim(),published:req.body.published!==false,publishedAt:nowIso(),createdAt:nowIso()};
   if(req.body.file?.base64){
     const contentType=String(req.body.file.contentType||'application/octet-stream').toLowerCase();
     if(!['application/pdf','image/jpeg','image/png'].includes(contentType)) return res.status(400).json({error:'Attachments must be PDF, JPG/JPEG, or PNG.',code:'INVALID_ATTACHMENT_TYPE'});
@@ -170,7 +173,7 @@ adminRouter.post('/content',async(req,res)=>{
     const safeName=String(req.body.file.fileName||'attachment').replace(/[^a-zA-Z0-9._-]/g,'_'); const blobName=`${req.churchId}/${id}/${safeName}`;
     doc.attachment={...(await uploadBuffer(config.attachmentsContainer,blobName,buf,contentType)),fileName:safeName};
   }
-  await putDoc(tableNames.content,req.churchId,id,doc,{kind:doc.kind,published:doc.published,publishedAt:doc.publishedAt}); res.status(201).json(doc);
+  await putDoc(tableNames.content,req.churchId,id,doc,{kind:doc.kind,published:doc.published,publishedAt:doc.publishedAt}); if(doc.kind==='announcement'&&doc.published!==false) await enqueueAnnouncement(req.churchId,doc); res.status(201).json(doc);
 });
 adminRouter.delete('/content/:id',async(req,res)=>{await deleteDoc(tableNames.content,req.churchId,req.params.id);res.json({ok:true});});
 

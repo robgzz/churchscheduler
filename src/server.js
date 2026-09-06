@@ -45,7 +45,7 @@ app.use(localizationMiddleware);
 app.use(sameOriginWrite);
 app.use(attachIdentity);
 app.use(requireCsrf);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'2.5.0'}));
+app.get('/healthz',(req,res)=>res.json({ok:true,version:'3.0.0'}));
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);
@@ -70,4 +70,4 @@ app.use((err,req,res,next)=>{
 
 await ensureStorage();
 await seedIfNeeded(config.churchId);
-app.listen(config.port,()=>console.log(`Church Scheduler V2 listening on ${config.port}`));
+app.listen(config.port,()=>console.log(`Church Scheduler V3 listening on ${config.port}`));

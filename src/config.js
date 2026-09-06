@@ -37,5 +37,6 @@ export const tableNames = {
   visitorContacts: 'VisitorContacts',
   petitions: 'Petitions',
   pushSubscriptions: 'PushSubscriptions',
-  notificationLogs: 'NotificationLogs'
+  notificationLogs: 'NotificationLogs',
+  notificationQueue: 'NotificationQueue'
 };

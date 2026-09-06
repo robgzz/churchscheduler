@@ -4,7 +4,7 @@ import { tableNames } from '../config.js';
 import { getDoc, putDoc, listDocs, nowIso } from '../storage/repository.js';
 import { destroyAllUserSessions } from '../auth/sessions.js';
 import { securityEvent } from '../security/audit.js';
-import { communicationStatus, sendEmail, sendSms } from '../communications/service.js';
+import { communicationStatus, sendEmail, sendSms, lastNotificationResults } from '../communications/service.js';
 
 export const ownerRouter=express.Router();
 ownerRouter.use(requireOwner);
@@ -30,12 +30,17 @@ ownerRouter.get('/scheduler-audit',async(req,res)=>{
   res.json(rows.sort((a,b)=>String(b.occurredAt).localeCompare(String(a.occurredAt))));
 });
 
-ownerRouter.get('/communications/status',(req,res)=>res.json(communicationStatus()));
+ownerRouter.get('/communications/status',async(req,res)=>{const lastResults=await lastNotificationResults(req.churchId,50);const lastTestResult=lastResults.find(r=>r.metadata?.type==='admin.test')||null;res.json({...communicationStatus(),lastTestResult,lastResults:lastResults.slice(0,10)});});
+ownerRouter.get('/communications/members',async(req,res)=>{const members=(await listDocs(tableNames.members,req.churchId,{max:3000})).filter(m=>m.active!==false&&(m.email||m.phone)).sort((a,b)=>String(a.fullName||'').localeCompare(String(b.fullName||''),'es'));res.json(members.map(m=>({id:m.id,fullName:m.fullName,email:m.email||'',phone:m.phone||''})));});
+ownerRouter.get('/communications/logs',async(req,res)=>res.json(await lastNotificationResults(req.churchId,Number(req.query.max||100))));
 ownerRouter.post('/communications/test',async(req,res,next)=>{
   try{
-    const channel=String(req.body?.channel||'').toLowerCase();
-    if(channel==='email') return res.json(await sendEmail({churchId:req.churchId,to:req.body.to,displayName:req.body.displayName||'',subject:req.body.subject||'Westbury Church of Christ test',text:req.body.message||'Azure Communication Services email is working.'}));
-    if(channel==='sms') return res.json(await sendSms({churchId:req.churchId,to:req.body.to,message:req.body.message||'Westbury Church of Christ: Azure Communication Services SMS is working.'}));
+    const channel=String(req.body?.channel||'').toLowerCase(),memberId=String(req.body?.memberId||'');
+    const member=memberId?await getDoc(tableNames.members,req.churchId,memberId):null;
+    if(!member)return res.status(400).json({error:'Select an active member to test.'});
+    const eventKey=`admin-test:${channel}:${Date.now()}`;
+    if(channel==='email'){if(!member.email)return res.status(400).json({error:'Selected member does not have an email address.'});return res.json(await sendEmail({churchId:req.churchId,to:member.email,displayName:member.fullName||'',subject:req.body.subject||'Westbury Church of Christ test',text:req.body.message||'Azure Communication Services email is working.',eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
+    if(channel==='sms'){if(!member.phone)return res.status(400).json({error:'Selected member does not have a phone number.'});let phone=String(member.phone).replace(/[^\d+]/g,'');if(!phone.startsWith('+'))phone=phone.length===10?`+1${phone}`:`+${phone}`;return res.json(await sendSms({churchId:req.churchId,to:phone,message:req.body.message||'Westbury Church of Christ: Azure Communication Services SMS is working.',eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
     return res.status(400).json({error:'channel must be email or sms'});
   }catch(e){next(e);}
 });

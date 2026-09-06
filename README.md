@@ -1,3 +1,7 @@
+# Church Scheduler V3.0
+
+Production PWA for church scheduling, communications, content and audit history. V3 adds modular Azure Communication Services automation, Church Administrator testing, durable notification queueing, assignment reminders, announcement broadcasts, admin alerts, map-aware activity announcements, and audit export.
+
 # Church Scheduler V2.4
 
 Mobile-first church scheduling PWA designed for Azure Container Apps + Azure Blob/Table Storage.
@@ -198,9 +202,9 @@ The expected church size of 200+ members remains modest for this architecture. T
 
 Azure Communication Services automated SMS/email is still intentionally **not provisioned in V2.2**. Native Share, WhatsApp, and user-initiated SMS sharing remain available.
 
-## V2.5 Azure Communication Services
+## V3.0 Azure Communication Services
 
-V2.5 includes an optional, modular ACS deployment for Email and SMS. The app remains fully functional if communications are disabled.
+V3.0 includes an optional, modular ACS deployment for Email and SMS. The app remains fully functional if communications are disabled.
 
 Configured email sender after DNS verification: `WestburyChurchofChrist@exonuvia.com`.
 
@@ -223,4 +227,4 @@ For SMS, acquire and verify an SMS-capable toll-free number in the Azure Communi
 .\scripts\enable-acs.ps1 -EnableSms -SmsFromNumber "+1XXXXXXXXXX"
 ```
 
-See `docs/AZURE-COMMUNICATION-SERVICES-V2.5.md` for the complete staged procedure.
+See `docs/AZURE-COMMUNICATION-SERVICES-V3.0.md` for the complete staged procedure.
