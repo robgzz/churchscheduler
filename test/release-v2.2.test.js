@@ -29,5 +29,5 @@ test('V2.2 includes server read caching and optimized PWA shell caching',()=>{
 });
 
 test('V2.2 infrastructure allows four burst replicas',()=>{
-  assert.match(bicep,/param maxReplicas int = 4/);
+  assert.match(bicep,/param maxReplicas int = [4-9]/);
 });

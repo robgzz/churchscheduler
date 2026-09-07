@@ -27,15 +27,15 @@ param initialImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 @description('Public placeholder job image used only during initial infrastructure deployment.')
 param initialJobImage string = 'mcr.microsoft.com/k8se/quickstart-jobs:latest'
 
-@description('Minimum web replicas. 0 enables scale-to-zero for lowest cost; set to 1 if you prefer no cold start.')
+@description('Minimum web replicas. V3.4 defaults to 1 to eliminate normal scale-to-zero cold starts and improve interactive reliability.')
 @minValue(0)
 @maxValue(2)
-param minReplicas int = 0
+param minReplicas int = 1
 
-@description('Maximum web replicas. Four provides inexpensive burst headroom for 200+ members while still scaling down when idle.')
+@description('Maximum web replicas. Six provides extra burst headroom for service-time traffic.')
 @minValue(1)
 @maxValue(10)
-param maxReplicas int = 4
+param maxReplicas int = 6
 
 @description('Scheduler job cron in UTC. Default runs every 5 minutes.')
 param schedulerCron string = '*/5 * * * *'
@@ -66,6 +66,7 @@ var tableList = [
   'PushSubscriptions'
   'NotificationLogs'
   'NotificationQueue'
+  'AppNotifications'
 ]
 var blobContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
 var tableContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
@@ -219,12 +220,27 @@ resource webApp 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'AZURE_BLOB_BACKUPS_CONTAINER', value: backupsContainer.name }
             { name: 'COOKIE_SECURE', value: 'true' }
           ]
-          resources: { cpu: json('0.25'), memory: '0.5Gi' }
+          resources: { cpu: json('0.5'), memory: '1Gi' }
+          probes: [
+            { type: 'Startup', httpGet: { path: '/healthz', port: 8080, scheme: 'HTTP' }, initialDelaySeconds: 2, periodSeconds: 3, timeoutSeconds: 2, failureThreshold: 20 }
+            { type: 'Liveness', httpGet: { path: '/healthz', port: 8080, scheme: 'HTTP' }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+            { type: 'Readiness', httpGet: { path: '/healthz', port: 8080, scheme: 'HTTP' }, initialDelaySeconds: 5, periodSeconds: 5, timeoutSeconds: 3, failureThreshold: 3 }
+          ]
         }
       ]
       scale: {
         minReplicas: minReplicas
         maxReplicas: maxReplicas
+        rules: [
+          {
+            name: 'http-requests'
+            http: {
+              metadata: {
+                concurrentRequests: '25'
+              }
+            }
+          }
+        ]
       }
     }
   }

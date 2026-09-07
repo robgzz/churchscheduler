@@ -72,6 +72,59 @@ adminRouter.get('/people',async(req,res)=>{
   const [members,ministries,services]=await Promise.all([listDocs(tableNames.members,req.churchId),listDocs(tableNames.ministries,req.churchId),listDocs(tableNames.services,req.churchId)]);
   res.json({members:members.sort((a,b)=>a.fullName.localeCompare(b.fullName,'es')),ministries,services});
 });
+
+function memberExportRows(members,ministries,services){
+  const ministryMap=new Map(ministries.map(x=>[x.id,x.labelEn||x.labelEs||x.label||x.id]));
+  const serviceMap=new Map(services.map(x=>[x.id,x.labelEn||x.labelEs||x.label||x.id]));
+  return members.sort((a,b)=>String(a.fullName||'').localeCompare(String(b.fullName||''),'es')).map(m=>({
+    Name:m.fullName||'',Username:m.username||'',Email:m.email||'',Phone:m.phone||'',Active:m.active===false?'No':'Yes',
+    Groups:(m.groups||[]).join('; '),Admin:m.adminAccess===true?'Yes':'No',ChurchAdministrator:m.churchAdministrator===true?'Yes':'No',
+    Ministries:(m.ministries||[]).map(id=>ministryMap.get(id)||id).join('; '),
+    Services:(m.serviceAvailability||[]).map(id=>serviceMap.get(id)||id).join('; '),
+    AssignmentEligibility:(m.assignmentEligibility||[]).join('; '),
+    Unavailability:(m.unavailability||[]).map(x=>`${x.from||''}..${x.to||''}${x.note?` (${x.note})`:''}`).join('; '),
+    CreatedAt:m.createdAt||'',UpdatedAt:m.updatedAt||''
+  }));
+}
+adminRouter.get('/people/export',async(req,res,next)=>{try{
+  const format=String(req.query.format||'csv').toLowerCase();
+  const [members,ministries,services]=await Promise.all([listDocs(tableNames.members,req.churchId,{max:10000}),listDocs(tableNames.ministries,req.churchId,{max:5000}),listDocs(tableNames.services,req.churchId,{max:5000})]);
+  const rows=memberExportRows(members,ministries,services),stamp=new Date().toISOString().slice(0,10);
+  if(format==='csv'){res.type('text/csv');res.setHeader('Content-Disposition',`attachment; filename=members-${stamp}.csv`);return res.send(toCsv(rows));}
+  if(format==='xls'||format==='excel'){res.type('application/vnd.ms-excel');res.setHeader('Content-Disposition',`attachment; filename=members-${stamp}.xls`);return res.send(toExcelXml(rows,'Members'));}
+  if(format==='pdf'){res.type('application/pdf');res.setHeader('Content-Disposition',`attachment; filename=members-${stamp}.pdf`);return res.send(await toPdf(rows,{title:'Church Scheduler Member Directory'}));}
+  res.status(400).json({error:'format must be csv, excel, or pdf'});
+}catch(e){next(e);}});
+
+adminRouter.post('/member-access/:id/approve',async(req,res,next)=>{try{
+  const request=await getDoc(tableNames.visitorContacts,req.churchId,req.params.id);
+  if(!request||request.kind!=='member_access_request')return res.status(404).json({error:'Member access request not found'});
+  if(request.status==='rejected')return res.status(409).json({error:'This request has already been rejected.'});
+  if(request.memberId){const existing=await getDoc(tableNames.members,req.churchId,request.memberId);return res.json({ok:true,member:existing,alreadyProcessed:true});}
+  const all=await listDocs(tableNames.members,req.churchId,{max:10000});
+  const email=String(request.email||'').trim().toLowerCase(),phone=String(request.phone||'').replace(/\D/g,'');
+  let member=all.find(m=>(email&&String(m.email||'').trim().toLowerCase()===email)||(phone&&String(m.phone||'').replace(/\D/g,'')===phone));
+  if(member){
+    member={...member,email:member.email||request.email||'',phone:member.phone||request.phone||'',updatedAt:nowIso()};
+  }else{
+    const id=`m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
+    member={id,fullName:String(request.fullName||`${request.firstName||''} ${request.lastName||''}`).trim(),username:'',email:String(request.email||'').trim(),phone:String(request.phone||'').trim(),active:true,groups:['members'],ministries:[],serviceAvailability:[],assignmentEligibility:[],unavailability:[],allowSameDayMultipleServices:false,adminAccess:false,churchAdministrator:false,createdAt:nowIso()};
+  }
+  await putDoc(tableNames.members,req.churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:false,churchAdministrator:false});
+  request.status='approved';request.memberId=member.id;request.reviewedAt=nowIso();request.reviewedBy=req.identity?.member?.id||req.identity?.user?.memberId||'';
+  await putDoc(tableNames.visitorContacts,req.churchId,request.id,request,{status:'approved',createdAt:request.createdAt||''});
+  await appendHistory(req.churchId,{eventType:'member_access.approved',memberId:member.id,source:'admin',details:{requestId:request.id,reviewedBy:request.reviewedBy,fullName:member.fullName}});
+  res.json({ok:true,member});
+}catch(e){next(e);}});
+adminRouter.post('/member-access/:id/reject',async(req,res,next)=>{try{
+  const request=await getDoc(tableNames.visitorContacts,req.churchId,req.params.id);
+  if(!request||request.kind!=='member_access_request')return res.status(404).json({error:'Member access request not found'});
+  if(request.memberId||request.status==='approved')return res.status(409).json({error:'This request has already been approved.'});
+  request.status='rejected';request.reviewedAt=nowIso();request.reviewedBy=req.identity?.member?.id||req.identity?.user?.memberId||'';request.rejectionReason=String(req.body?.reason||'').trim();
+  await putDoc(tableNames.visitorContacts,req.churchId,request.id,request,{status:'rejected',createdAt:request.createdAt||''});
+  await appendHistory(req.churchId,{eventType:'member_access.rejected',memberId:request.reviewedBy||'',source:'admin',details:{requestId:request.id,fullName:request.fullName||'',reason:request.rejectionReason}});
+  res.json({ok:true});
+}catch(e){next(e);}});
 adminRouter.post('/people',async(req,res)=>{
   const id=req.body.id || `m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
   const doc={id,fullName:String(req.body.fullName||'').trim(),username:String(req.body.username||'').trim().toLowerCase(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),active:req.body.active!==false,groups:Array.isArray(req.body.groups)?req.body.groups:['members'],ministries:Array.isArray(req.body.ministries)?req.body.ministries:[],serviceAvailability:Array.isArray(req.body.serviceAvailability)?req.body.serviceAvailability:[],unavailability:Array.isArray(req.body.unavailability)?req.body.unavailability:[],allowSameDayMultipleServices:req.body.allowSameDayMultipleServices===true,adminAccess:false,churchAdministrator:false,createdAt:nowIso()};
