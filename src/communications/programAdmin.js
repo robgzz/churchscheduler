@@ -48,7 +48,8 @@ export async function notifyProgramAdmin(churchId,{eventKey,type,titleEn,titleEs
   const locale=lang(admin),title=locale==='en'?titleEn:titleEs,message=locale==='en'?messageEn:messageEs,churchName=displayChurch(settings,locale);
   await createAppNotification(churchId,admin,{eventKey,title,message,metadata:{type,...metadata}});
   let queued=0;
-  for(const channel of ['sms','email']){
+  const legacyChannels=['sms','email'];
+  for(const channel of [...legacyChannels,'push']){
     if(await enqueue({churchId,eventKey,channel,member:admin,subject:title,message:`${churchName}: ${message}`,metadata:{type,...metadata}}))queued++;
   }
   return {notified:true,memberId:admin.id,queued};

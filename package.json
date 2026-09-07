@@ -1,6 +1,6 @@
 {
   "name": "westbury-church-scheduler",
-  "version": "3.4.2",
+  "version": "3.4.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,6 +22,13 @@
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "web-push": "^3.6.7",
-    "compression": "^1.7.4"
+    "compression": "^1.7.4",
+    "firebase-admin": "^13.5.0",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/push-notifications": "^8.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1"
   }
 }

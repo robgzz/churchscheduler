@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Exonuvia Church Scheduler</string>
-    <string name="title_activity_main">Exonuvia Church Scheduler</string>
-    <string name="package_name">com.exonuvia.churchscheduler</string>
-    <string name="custom_url_scheme">com.exonuvia.churchscheduler</string>
+    <string name="app_name">Westbury Church Scheduler</string>
+    <string name="title_activity_main">Westbury Church Scheduler</string>
+    <string name="package_name">com.exonuvia.westburychurchscheduler</string>
+    <string name="custom_url_scheme">com.exonuvia.westburychurchscheduler</string>
 </resources>

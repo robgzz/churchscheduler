@@ -20,7 +20,9 @@ export const config = {
   acsEmailSender: process.env.ACS_EMAIL_SENDER || '',
   acsSmsEnabled: String(process.env.ACS_SMS_ENABLED || '').toLowerCase() === 'true',
   acsSmsFromNumber: process.env.ACS_SMS_FROM_NUMBER || '',
-  publicAppUrl: String(process.env.PUBLIC_APP_URL || '').replace(/\/$/,'')
+  publicAppUrl: String(process.env.PUBLIC_APP_URL || '').replace(/\/$/,''),
+  firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
+  firebaseServiceAccountJsonBase64: process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 || ''
 };
 
 export const tableNames = {
@@ -39,6 +41,7 @@ export const tableNames = {
   visitorContacts: 'VisitorContacts',
   petitions: 'Petitions',
   pushSubscriptions: 'PushSubscriptions',
+  pushDevices: 'PushDevices',
   notificationLogs: 'NotificationLogs',
   notificationQueue: 'NotificationQueue',
   appNotifications: 'AppNotifications'

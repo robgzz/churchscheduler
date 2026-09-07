@@ -22,6 +22,25 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(t
 applyTheme();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
 
+
+let nativePushInitialized=false;
+async function initNativePush(){
+  if(nativePushInitialized||!state.me?.member)return;
+  const cap=window.Capacitor,Push=cap?.Plugins?.PushNotifications;
+  if(!Push||!(cap.isNativePlatform?.()??true))return;
+  nativePushInitialized=true;
+  try{
+    await Push.removeAllListeners?.();
+    await Push.addListener('registration',async token=>{try{await api('/api/member/push-devices',{method:'POST',body:JSON.stringify({token:token.value,platform:'android',deviceName:navigator.userAgent.slice(0,100)})});}catch(e){console.warn('Push token registration failed',e);}});
+    await Push.addListener('registrationError',err=>console.warn('Native push registration error',err));
+    await Push.addListener('pushNotificationReceived',notification=>{toast(notification?.title||t('notifications.title'));refreshNotificationBadge();});
+    await Push.addListener('pushNotificationActionPerformed',action=>{const data=action?.notification?.data||{};const route=data.route||'';if(route==='schedule'||String(data.type||'').startsWith('assignment'))state.tab='schedule';else if(route==='church'||data.type==='announcement')state.tab='church';else if(route==='petitions')state.tab='petitions';else if(route==='admin-content'&&isAdmin()){location.href='/admin';return;}else state.tab='home';renderApp();});
+    let permission=await Push.checkPermissions();
+    if(permission.receive==='prompt')permission=await Push.requestPermissions();
+    if(permission.receive==='granted')await Push.register();
+  }catch(e){nativePushInitialized=false;console.warn('Native push initialization failed',e);}
+}
+
 function groups(){return state.me?.member?.groups||[];}
 function isWorship(){return groups().includes('worship');}
 function isMember(){return groups().includes('members');}
@@ -44,6 +63,7 @@ async function init(){
   applyBranding();bindHeaderControls();
   if(!state.me&&!state.visitor){renderLogin();return;}
   renderApp();
+  initNativePush().catch(()=>{});
 }
 
 
@@ -61,7 +81,7 @@ function openNotifications(rows=[]){
 
 function renderSetup(setup){nav.classList.add('hidden');logoutBtn.classList.add('hidden');pageTitle.textContent=t('setup.title');const church=state.bootstrap?.church||{};main.innerHTML=`<div class="login-wrap"><div class="brand-hero">${church.logoUrl?`<img class="brand-hero-logo" src="${esc(church.logoUrl)}" alt="">`:''}<h2>${esc(t('setup.heading'))}</h2><p class="muted">${esc(t('setup.body'))}</p></div><form id="setup-form" class="card stack"><div class="field"><label>${t('setup.code')}</label><input class="input" name="bootstrapCode" autocomplete="one-time-code" required></div><div class="field"><label>${t('setup.adminUsername')}</label><input class="input" name="username" value="${esc(setup.initialOwnerUsername||'churchadmin')}" required></div><div class="field"><label>${t('common.password')}</label><input class="input" name="password" type="password" minlength="12" required><span class="tiny muted">${t('setup.passwordHint')}</span></div><div class="field"><label>${t('setup.nameOnly')}</label><input class="input" name="fullName"></div><button class="btn full">${t('setup.create')}</button></form></div>`;$('#setup-form').onsubmit=async e=>{e.preventDefault();try{const setupResult=await api('/api/setup/owner',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});state.csrf=setupResult.csrfToken||null;toast(t('setup.created'));location.reload();}catch(err){toast(err.message);}};}
 
-function renderLogin(){nav.classList.add('hidden');logoutBtn.classList.add('hidden');pageTitle.textContent=t('login.welcome');const church=state.bootstrap?.church||{};const displayName=locale()==='en'?(church.churchNameEn||church.churchName):(church.churchNameEs||church.churchName);main.innerHTML=`<div class="login-wrap"><div class="brand-hero">${church.logoUrl?`<img class="brand-hero-logo" src="${esc(church.logoUrl)}" alt="${esc(displayName||'')}">`:''}<h2>${esc(displayName||'Church')}</h2><p class="muted">${t('login.prompt')}</p></div><form id="login-form" class="card stack"><div class="field"><label>${t('common.username')}</label><input class="input" name="username" autocomplete="username" required></div><div class="field"><label>${t('common.password')}</label><input class="input" name="password" type="password" autocomplete="current-password" required></div><button class="btn full">${t('login.signin')}</button><button type="button" class="btn secondary full" id="visitor-btn">${t('login.visitor')}</button><div class="login-request-row"><span>${t('login.noAccount')}</span><button type="button" class="link-button" id="request-access-btn">${t('login.requestAccess')}</button></div></form></div>`;$('#login-form').onsubmit=async e=>{e.preventDefault();try{state.me=await api('/api/auth/login',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});state.csrf=state.me.csrfToken||null;if(state.me?.member?.preferences?.locale)setLocale(state.me.member.preferences.locale,false);if(state.me?.member?.preferences?.theme)applyTheme(state.me.member.preferences.theme);state.bootstrap=await api('/api/public/bootstrap');applyBranding();renderApp();setTimeout(maybePromptContact,250);}catch(err){toast(err.message);}};$('#visitor-btn').onclick=()=>{state.visitor=true;renderApp();};$('#request-access-btn')?.addEventListener('click',openAccessRequestModal);}
+function renderLogin(){nav.classList.add('hidden');logoutBtn.classList.add('hidden');pageTitle.textContent=t('login.welcome');const church=state.bootstrap?.church||{};const displayName=locale()==='en'?(church.churchNameEn||church.churchName):(church.churchNameEs||church.churchName);main.innerHTML=`<div class="login-wrap"><div class="brand-hero">${church.logoUrl?`<img class="brand-hero-logo" src="${esc(church.logoUrl)}" alt="${esc(displayName||'')}">`:''}<h2>${esc(displayName||'Church')}</h2><p class="muted">${t('login.prompt')}</p></div><form id="login-form" class="card stack"><div class="field"><label>${t('common.username')}</label><input class="input" name="username" autocomplete="username" required></div><div class="field"><label>${t('common.password')}</label><input class="input" name="password" type="password" autocomplete="current-password" required></div><button class="btn full">${t('login.signin')}</button><button type="button" class="btn secondary full" id="visitor-btn">${t('login.visitor')}</button><div class="login-request-row"><span>${t('login.noAccount')}</span><button type="button" class="link-button" id="request-access-btn">${t('login.requestAccess')}</button></div></form></div>`;$('#login-form').onsubmit=async e=>{e.preventDefault();try{state.me=await api('/api/auth/login',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});state.csrf=state.me.csrfToken||null;if(state.me?.member?.preferences?.locale)setLocale(state.me.member.preferences.locale,false);if(state.me?.member?.preferences?.theme)applyTheme(state.me.member.preferences.theme);state.bootstrap=await api('/api/public/bootstrap');applyBranding();renderApp();initNativePush().catch(()=>{});setTimeout(maybePromptContact,250);}catch(err){toast(err.message);}};$('#visitor-btn').onclick=()=>{state.visitor=true;renderApp();};$('#request-access-btn')?.addEventListener('click',openAccessRequestModal);}
 
 function navItems(){if(state.visitor)return[{id:'home',ico:'🏠',label:t('common.home')},{id:'church',ico:'⛪',label:t('common.church')},{id:'connect',ico:'🤝',label:t('common.connect')}];const items=[{id:'home',ico:'🏠',label:t('common.home')}];if(canSeePrograms())items.push({id:'schedule',ico:'📅',label:t('common.schedule')});items.push({id:'church',ico:'⛪',label:t('common.church')});if(isMember())items.push({id:'petitions',ico:'🙏',label:t('common.petitions')});items.push({id:'profile',ico:'👤',label:t('common.profile')});return items;}
 function renderNav(){nav.classList.remove('hidden');nav.innerHTML=navItems().map(i=>`<button class="nav-btn ${state.tab===i.id?'active':''}" data-tab="${i.id}"><span class="ico">${i.ico}</span>${esc(i.label)}</button>`).join('');nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;renderApp();});}

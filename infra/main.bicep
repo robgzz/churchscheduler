@@ -64,6 +64,7 @@ var tableList = [
   'VisitorContacts'
   'Petitions'
   'PushSubscriptions'
+  'PushDevices'
   'NotificationLogs'
   'NotificationQueue'
   'AppNotifications'

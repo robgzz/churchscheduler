@@ -4,7 +4,7 @@ import { tableNames } from '../config.js';
 import { getDoc, putDoc, listDocs, nowIso } from '../storage/repository.js';
 import { destroyAllUserSessions } from '../auth/sessions.js';
 import { securityEvent } from '../security/audit.js';
-import { communicationStatus, sendEmail, sendSms, lastNotificationResults } from '../communications/service.js';
+import { communicationStatus, sendEmail, sendSms, sendPush, lastNotificationResults } from '../communications/service.js';
 import { setProgramAdmin, getProgramAdmin, syncProgramStatus } from '../communications/programAdmin.js';
 import { appendHistory } from '../scheduler/history.js';
 import { parseTabularUpload, importSongs, importMembersAndAssignments, rowsToCsv, rowsToExcelXml, songTemplateRows, memberTemplateRows } from '../services/bulkImport.js';
@@ -58,8 +58,9 @@ ownerRouter.post('/communications/test',async(req,res,next)=>{
     if(!member)return res.status(400).json({error:'Select an active member to test.'});
     const eventKey=`admin-test:${channel}:${Date.now()}`;
     if(channel==='email'){if(!member.email)return res.status(400).json({error:'Selected member does not have an email address.'});const church=await getDoc(tableNames.settings,req.churchId,'church')||{};const churchName=church.churchName||'Church';return res.json(await sendEmail({churchId:req.churchId,to:member.email,displayName:member.fullName||'',subject:req.body.subject||`${churchName} test`,text:req.body.message||'Azure Communication Services email is working.',eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
+    if(channel==='push'){return res.json(await sendPush({churchId:req.churchId,memberId:member.id,title:req.body.subject||'Westbury Church Scheduler',message:req.body.message||'Native push notifications are working.',eventKey,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||'',route:'home'}}));}
     if(channel==='sms'){if(!member.phone)return res.status(400).json({error:'Selected member does not have a phone number.'});const church=await getDoc(tableNames.settings,req.churchId,'church')||{};const churchName=church.churchName||'Church';let phone=String(member.phone).replace(/[^\d+]/g,'');if(!phone.startsWith('+'))phone=phone.length===10?`+1${phone}`:`+${phone}`;return res.json(await sendSms({churchId:req.churchId,to:phone,message:req.body.message||`${churchName}: Azure Communication Services SMS is working.`,eventKey,memberId:member.id,metadata:{type:'admin.test',requestedBy:req.identity?.member?.id||''}}));}
-    return res.status(400).json({error:'channel must be email or sms'});
+    return res.status(400).json({error:'channel must be email, sms or push'});
   }catch(e){next(e);}
 });
 

@@ -11,9 +11,15 @@ import { appendHistory } from '../scheduler/history.js';
 import { enqueueAdminAlert } from '../communications/notifications.js';
 import { songSelectionContext, validateNoDuplicateSongsInProgram } from '../services/songSelection.js';
 import { syncProgramStatus } from '../communications/programAdmin.js';
+import { upsertPushDevice, deactivatePushDevice, listMemberPushDevices } from '../communications/push.js';
 
 export const memberRouter=express.Router();
 memberRouter.use(requireLogin);
+
+
+memberRouter.get('/push-devices',async(req,res)=>{const rows=await listMemberPushDevices(req.churchId,req.identity.member.id);res.json(rows.map(x=>({id:x.id,platform:x.platform,deviceName:x.deviceName||'',lastSeenAt:x.lastSeenAt||''})));});
+memberRouter.post('/push-devices',async(req,res,next)=>{try{res.status(201).json(await upsertPushDevice(req.churchId,req.identity.member,{token:req.body?.token,platform:req.body?.platform||'android',deviceName:req.body?.deviceName||''}));}catch(e){next(e);}});
+memberRouter.delete('/push-devices',async(req,res,next)=>{try{const token=String(req.body?.token||'');if(!token)return res.status(400).json({error:'Push token is required.'});res.json({ok:await deactivatePushDevice(req.churchId,req.identity.member.id,token)});}catch(e){next(e);}});
 
 memberRouter.get('/assignments',requireGroup('worship'),async(req,res)=>res.json(await myAssignments(req.churchId,req.identity.member.id)));
 

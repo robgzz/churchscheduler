@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1089847445369",
+    "project_id": "westbury-church-scheduler",
+    "storage_bucket": "westbury-church-scheduler.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089847445369:android:8cd1d7f6d9421cad6ed1a8",
+        "android_client_info": {
+          "package_name": "com.exonuvia.westburychurchscheduler"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZOAmideG-Th5bWjmAKjr-TyEzPPypqSk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
