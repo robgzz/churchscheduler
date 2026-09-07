@@ -8,7 +8,7 @@ test('V2.4 server enables CSP and CSRF middleware',()=>{
   assert.match(s,/requireCsrf/);
   assert.match(s,/sameOriginWrite/);
 });
-test('tenant id is server-bound',()=>{
+test('church id is server-bound',()=>{
   const s=fs.readFileSync(new URL('../src/auth/middleware.js',import.meta.url),'utf8');
   assert.match(s,/const churchId = config\.churchId/);
   assert.doesNotMatch(s,/x-church-id/);

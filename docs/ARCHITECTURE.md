@@ -46,7 +46,7 @@ Visitors can use the public bulletin/news experience and the Visitor Connect for
 
 ## Azure Table layout
 
-All rows use the church identifier as `PartitionKey`, making the schema ready for multiple churches while Westbury remains the initial tenant.
+All rows use the Westbury church identifier as `PartitionKey`. This deployment is intentionally dedicated to Westbury.
 
 | Table | Purpose |
 | --- | --- |

@@ -18,7 +18,7 @@ function Require-Command($name) {
 }
 Require-Command az
 
-# Explicitly target commercial/public Azure.
+# Explicitly target Azure public cloud.
 az cloud set --name AzureCloud | Out-Null
 az config set extension.use_dynamic_install=yes_without_prompt | Out-Null
 try { az extension add --name containerapp --upgrade --yes --output none 2>$null } catch {}

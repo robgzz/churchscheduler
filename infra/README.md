@@ -1,6 +1,6 @@
 # Azure Infrastructure Package — Church Scheduler V2
 
-This folder and the sibling `scripts/` folder deploy Church Scheduler V2 to **commercial/public Azure (`AzureCloud`)**.
+This folder and the sibling `scripts/` folder deploy Church Scheduler V2 to **Azure public cloud (`AzureCloud`)**.
 
 ## Resources
 

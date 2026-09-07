@@ -7,7 +7,7 @@ V2.4 hardens the existing Azure/PWA architecture. No internet-facing application
 - Bootstrap throttling.
 - Per-session CSRF tokens for authenticated writes.
 - Same-origin enforcement for browser writes.
-- Server-bound church/tenant identifier; `X-Church-Id` from browsers is ignored.
+- Server-bound church identifier; `X-Church-Id` from browsers is ignored.
 - CSP, HSTS (production), frame blocking, no-referrer and restrictive Permissions-Policy.
 - All-device session revocation after password changes, account disable, password reset/provision, and admin-access changes.
 - Minimum 12-character new/reset passwords.
@@ -31,4 +31,4 @@ V2.4 hardens the existing Azure/PWA architecture. No internet-facing application
 - Keep the GitHub repository private unless you intentionally choose otherwise.
 - Restrict Azure subscription/resource-group permissions to people who need them.
 - Review `security.*` events in History when troubleshooting suspicious activity.
-- For a future multi-church SaaS deployment, use a formal tenant directory/hostname mapping and consider Front Door/WAF plus private Storage networking.
+- This Westbury edition is server-bound to the Westbury church identifier; do not reuse this deployment for another church.

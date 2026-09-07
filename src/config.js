@@ -1,8 +1,9 @@
 export const config = {
   port: Number(process.env.PORT || 8080),
   nodeEnv: process.env.NODE_ENV || 'development',
-  churchId: process.env.DEFAULT_CHURCH_ID || 'westbury',
-  seedProfile: process.env.SEED_PROFILE || '',
+  // Dedicated Westbury edition. This deployment is intentionally single-church.
+  churchId: 'westbury',
+  seedProfile: 'westbury',
   initialOwnerUsername: (process.env.INITIAL_OWNER_USERNAME || 'churchadmin').trim().toLowerCase(),
   bootstrapCode: process.env.BOOTSTRAP_CODE || '',
   storageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME || '',

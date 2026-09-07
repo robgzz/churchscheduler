@@ -1,0 +1,9 @@
+{
+  "appId": "com.exonuvia.churchscheduler",
+  "appName": "Exonuvia Church Scheduler",
+  "webDir": "public",
+  "server": {
+    "url": "https://westburyapp-web.thankfulgrass-b69ccbff.centralus.azurecontainerapps.io",
+    "cleartext": false
+  }
+}

@@ -1,4 +1,6 @@
-# Church Scheduler V3.0
+# Westbury Church Scheduler V3.4.1
+
+**Westbury-only edition — by Exonuvia.** This package is intentionally dedicated to Westbury Church of Christ and runs as a single-church deployment.
 
 Production PWA for church scheduling, communications, content and audit history. V3 adds modular Azure Communication Services automation, Church Administrator testing, durable notification queueing, assignment reminders, announcement broadcasts, admin alerts, map-aware activity announcements, and audit export.
 

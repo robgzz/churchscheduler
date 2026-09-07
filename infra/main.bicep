@@ -8,7 +8,7 @@ param namePrefix string = 'churchv2'
 @description('Azure region. Keep Container Apps, ACR and Storage together for low latency and cost.')
 param location string = resourceGroup().location
 
-@description('Logical church/tenant identifier used as the Azure Table partition key.')
+@description('Westbury church identifier used as the Azure Table partition key.')
 param churchId string = 'westbury'
 
 @description('Seed profile included in the container image. Use westbury for the supplied migration seed.')
