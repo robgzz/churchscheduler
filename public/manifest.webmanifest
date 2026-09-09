@@ -1,12 +1,20 @@
 {
-  "name":"Westbury Church Scheduler by Exonuvia",
-  "short_name":"Westbury",
-  "start_url":"/",
-  "display":"standalone",
-  "background_color":"#f7f3ec",
-  "theme_color":"#2563eb",
-  "icons":[
-    {"src":"/assets/icon-192.png","sizes":"192x192","type":"image/png"},
-    {"src":"/assets/icon-512.png","sizes":"512x512","type":"image/png"}
+  "name": "Westbury Church Hub by Exonuvia",
+  "short_name": "Westbury Hub",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f3ec",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }

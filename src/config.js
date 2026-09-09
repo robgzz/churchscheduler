@@ -44,5 +44,7 @@ export const tableNames = {
   pushDevices: 'PushDevices',
   notificationLogs: 'NotificationLogs',
   notificationQueue: 'NotificationQueue',
-  appNotifications: 'AppNotifications'
+  appNotifications: 'AppNotifications',
+  children: 'Children',
+  childCheckIns: 'ChildCheckIns'
 };

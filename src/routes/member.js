@@ -10,7 +10,8 @@ import { threeWeekWindow } from '../scheduler/dates.js';
 import { appendHistory } from '../scheduler/history.js';
 import { enqueueAdminAlert } from '../communications/notifications.js';
 import { songSelectionContext, validateNoDuplicateSongsInProgram } from '../services/songSelection.js';
-import { syncProgramStatus } from '../communications/programAdmin.js';
+import { syncProgramStatus, notifyProgramAdmin } from '../communications/programAdmin.js';
+import { enqueue } from '../communications/notifications.js';
 import { upsertPushDevice, deactivatePushDevice, listMemberPushDevices } from '../communications/push.js';
 
 export const memberRouter=express.Router();
@@ -83,6 +84,8 @@ memberRouter.put('/assignments/:assignmentId/songs',requireGroup('worship'),asyn
   assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:assignment.currentMemberId||'',ministryId:assignment.ministryId,programId:assignment.programId});
   await appendHistory(req.churchId,{eventType:'songs.updated',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId:req.identity.member.id,dateISO:assignment.dateISO,details:{songIds:requested}});
+  const selectedSongs=requested.map(id=>songMap.get(id)).filter(Boolean); const songSummary=selectedSongs.map(x=>`${x.number?`${x.number} - `:''}${x.titleEs||x.title||x.titleEn||''}`).join(', ');
+  await notifyProgramAdmin(req.churchId,{eventKey:`songs-submitted:${assignment.id}:${assignment.songsUpdatedAt}`,type:'songs.submitted',titleEn:'Songs submitted',titleEs:'Cantos entregados',messageEn:`${req.identity.member.fullName} submitted songs for ${assignment.dateISO}${songSummary?`: ${songSummary}`:''}.`,messageEs:`${req.identity.member.fullName} entregó los cantos para ${assignment.dateISO}${songSummary?`: ${songSummary}`:''}.`,metadata:{assignmentId:assignment.id,programId:assignment.programId,dateISO:assignment.dateISO,songIds:requested},channels:['sms','push']});
   await syncProgramStatus(req.churchId,{programId:assignment.programId});
   res.json({ok:true,assignmentId:assignment.id,songIds:requested,songs:requested.map(id=>songMap.get(id))});
 });
@@ -93,10 +96,42 @@ memberRouter.put('/contact',async(req,res)=>{
   const email=String(req.body.email??member.email??'').trim();
   const phone=String(req.body.phone??member.phone??'').trim();
   if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:'Enter a valid email address.',code:'INVALID_EMAIL'});
-  member.email=email; member.phone=phone; member.updatedAt=nowIso();
+  member.email=email; member.phone=phone;
+  member.notificationPreferences={...(member.notificationPreferences||{}),email:req.body.emailNotificationsEnabled===undefined?(member.notificationPreferences?.email!==false):req.body.emailNotificationsEnabled===true,sms:req.body.smsNotificationsEnabled===undefined?(member.notificationPreferences?.sms!==false):req.body.smsNotificationsEnabled===true,push:member.notificationPreferences?.push!==false};
+  member.updatedAt=nowIso();
   await putDoc(tableNames.members,req.churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
   res.json({ok:true,member});
 });
+
+
+function childAge(value){const n=Number(value);return Number.isFinite(n)&&n>=0&&n<=25?Math.round(n):null;}
+async function notifyFamilyChildren(churchId,member,{eventKey,subject,message,metadata={}}){
+  const prefs=member.childrenNotificationPreferences||{};let queued=0;
+  for(const channel of ['sms','email','push']){
+    if(channel==='sms'&&prefs.sms===false)continue;if(channel==='email'&&prefs.email===false)continue;if(channel==='push'&&prefs.push===false)continue;
+    if(await enqueue({churchId,eventKey,channel,member,subject,message,metadata:{type:'children',...metadata}}))queued++;
+  }
+  return queued;
+}
+memberRouter.get('/children',async(req,res)=>{
+  const rows=await listDocs(tableNames.children,req.churchId,{filter:`memberId eq '${String(req.identity.member.id).replace(/'/g,"''")}'`,max:100});
+  const checkIns=await listDocs(tableNames.childCheckIns,req.churchId,{filter:`memberId eq '${String(req.identity.member.id).replace(/'/g,"''")}'`,max:300});
+  res.json({enabled:req.identity.member.childrenProgramEnabled===true,notificationPreferences:req.identity.member.childrenNotificationPreferences||{sms:true,email:true,push:true},children:rows.filter(x=>x.active!==false).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))),recentCheckIns:checkIns.sort((a,b)=>String(b.checkInAt||'').localeCompare(String(a.checkInAt||''))).slice(0,20)});
+});
+memberRouter.put('/children/enrollment',async(req,res)=>{
+  const member=req.identity.member;member.childrenProgramEnabled=req.body.enabled===true;member.childrenNotificationPreferences={sms:req.body.sms!==false,email:req.body.email!==false,push:req.body.push!==false};member.updatedAt=nowIso();
+  await putDoc(tableNames.members,req.churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
+  await appendHistory(req.churchId,{eventType:'children.enrollment.updated',memberId:member.id,source:'member',details:{enabled:member.childrenProgramEnabled,notificationPreferences:member.childrenNotificationPreferences}});res.json({ok:true,member});
+});
+memberRouter.post('/children',async(req,res)=>{
+  if(req.identity.member.childrenProgramEnabled!==true)return res.status(409).json({error:'Enroll in Children check-in first.',code:'CHILDREN_NOT_ENROLLED'});
+  const name=String(req.body.name||'').trim(),age=childAge(req.body.age);if(!name||age===null)return res.status(400).json({error:'Child name and valid age are required.'});
+  const id=`child_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`,doc={id,memberId:req.identity.member.id,name,age,active:true,createdAt:nowIso(),updatedAt:nowIso()};await putDoc(tableNames.children,req.churchId,id,doc,{memberId:doc.memberId,active:true});
+  await appendHistory(req.churchId,{eventType:'children.child.added',memberId:doc.memberId,source:'member',details:{childId:id,name,age}});res.status(201).json(doc);
+});
+memberRouter.put('/children/:id',async(req,res)=>{const row=await getDoc(tableNames.children,req.churchId,req.params.id);if(!row||row.memberId!==req.identity.member.id)return res.status(404).json({error:'Child not found'});const age=childAge(req.body.age??row.age);row.name=String(req.body.name??row.name).trim();row.age=age===null?row.age:age;row.active=req.body.active!==false;row.updatedAt=nowIso();await putDoc(tableNames.children,req.churchId,row.id,row,{memberId:row.memberId,active:row.active});res.json(row);});
+memberRouter.post('/children/:id/check-in',async(req,res)=>{const child=await getDoc(tableNames.children,req.churchId,req.params.id);if(!child||child.memberId!==req.identity.member.id||child.active===false)return res.status(404).json({error:'Child not found'});const id=`checkin_${crypto.randomUUID().replace(/-/g,'').slice(0,16)}`,pickupCode=String(Math.floor(100000+Math.random()*900000)),doc={id,childId:child.id,childName:child.name,childAge:child.age,memberId:req.identity.member.id,status:'checked_in',checkInAt:nowIso(),checkedInBy:req.identity.member.id,pickupCode,serviceId:String(req.body.serviceId||''),dateISO:String(req.body.dateISO||new Date().toISOString().slice(0,10)),createdAt:nowIso()};await putDoc(tableNames.childCheckIns,req.churchId,id,doc,{memberId:doc.memberId,childId:doc.childId,status:doc.status,dateISO:doc.dateISO});await appendHistory(req.churchId,{eventType:'children.checkin',memberId:doc.memberId,dateISO:doc.dateISO,source:'member',details:{childId:child.id,childName:child.name,checkInId:id}});await notifyFamilyChildren(req.churchId,req.identity.member,{eventKey:`children-checkin:${id}`,subject:'Westbury Church Hub - Children check-in',message:`${child.name} is checked in. Pickup code: ${pickupCode}.`,metadata:{action:'checkin',checkInId:id,childId:child.id,route:'children'}});res.status(201).json(doc);});
+memberRouter.post('/children/check-ins/:id/pickup',async(req,res)=>{const row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row||row.memberId!==req.identity.member.id)return res.status(404).json({error:'Check-in not found'});if(row.status!=='checked_in')return res.status(409).json({error:'Child is not currently checked in'});if(String(req.body.pickupCode||'')!==String(row.pickupCode||''))return res.status(403).json({error:'Pickup code does not match'});row.status='picked_up';row.pickupAt=nowIso();row.pickedUpBy=req.identity.member.id;await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||''});await appendHistory(req.churchId,{eventType:'children.pickup',memberId:row.memberId,dateISO:row.dateISO||'',source:'member',details:{childId:row.childId,childName:row.childName,checkInId:row.id}});await notifyFamilyChildren(req.churchId,req.identity.member,{eventKey:`children-pickup:${row.id}:${row.pickupAt}`,subject:'Westbury Church Hub - Children pickup',message:`${row.childName} was picked up at ${row.pickupAt}.`,metadata:{action:'pickup',checkInId:row.id,childId:row.childId,route:'children'}});res.json({ok:true,row});});
 
 memberRouter.put('/preferences',async(req,res)=>{
   const member=req.identity.member;

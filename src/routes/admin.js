@@ -13,6 +13,8 @@ import { threeWeekWindow } from '../scheduler/dates.js';
 import { enqueueAnnouncement } from '../communications/notifications.js';
 import { auditRows, toCsv, toExcelXml, toPdf } from '../services/auditExport.js';
 import { syncProgramStatus } from '../communications/programAdmin.js';
+import { reportCatalog, buildReport, reportCsv, reportXlsx, reportPdf } from '../services/reporting.js';
+import { enqueue } from '../communications/notifications.js';
 
 function fileSignatureOk(contentType,buf){
   if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
@@ -77,7 +79,7 @@ function memberExportRows(members,ministries,services){
   const ministryMap=new Map(ministries.map(x=>[x.id,x.labelEn||x.labelEs||x.label||x.id]));
   const serviceMap=new Map(services.map(x=>[x.id,x.labelEn||x.labelEs||x.label||x.id]));
   return members.sort((a,b)=>String(a.fullName||'').localeCompare(String(b.fullName||''),'es')).map(m=>({
-    Name:m.fullName||'',Username:m.username||'',Email:m.email||'',Phone:m.phone||'',Active:m.active===false?'No':'Yes',
+    Name:m.fullName||'',Username:m.username||'',Email:m.email||'',Phone:m.phone||'',EmailNotifications:m.notificationPreferences?.email===false?'No':'Yes',TextNotifications:m.notificationPreferences?.sms===false?'No':'Yes',ChildrenCheckIn:m.childrenProgramEnabled===true?'Yes':'No',Active:m.active===false?'No':'Yes',
     Groups:(m.groups||[]).join('; '),Admin:m.adminAccess===true?'Yes':'No',ChurchAdministrator:m.churchAdministrator===true?'Yes':'No',
     Ministries:(m.ministries||[]).map(id=>ministryMap.get(id)||id).join('; '),
     Services:(m.serviceAvailability||[]).map(id=>serviceMap.get(id)||id).join('; '),
@@ -108,7 +110,7 @@ adminRouter.post('/member-access/:id/approve',async(req,res,next)=>{try{
     member={...member,email:member.email||request.email||'',phone:member.phone||request.phone||'',updatedAt:nowIso()};
   }else{
     const id=`m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-    member={id,fullName:String(request.fullName||`${request.firstName||''} ${request.lastName||''}`).trim(),username:'',email:String(request.email||'').trim(),phone:String(request.phone||'').trim(),active:true,groups:['members'],ministries:[],serviceAvailability:[],assignmentEligibility:[],unavailability:[],allowSameDayMultipleServices:false,adminAccess:false,churchAdministrator:false,createdAt:nowIso()};
+    member={id,fullName:String(request.fullName||`${request.firstName||''} ${request.lastName||''}`).trim(),username:'',email:String(request.email||'').trim(),phone:String(request.phone||'').trim(),active:true,groups:['members'],ministries:[],serviceAvailability:[],assignmentEligibility:[],unavailability:[],allowSameDayMultipleServices:false,adminAccess:false,churchAdministrator:false,notificationPreferences:{sms:true,email:true,push:true},childrenProgramEnabled:false,childrenNotificationPreferences:{sms:true,email:true,push:true},createdAt:nowIso()};
   }
   await putDoc(tableNames.members,req.churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:false,churchAdministrator:false});
   request.status='approved';request.memberId=member.id;request.reviewedAt=nowIso();request.reviewedBy=req.identity?.member?.id||req.identity?.user?.memberId||'';
@@ -127,7 +129,7 @@ adminRouter.post('/member-access/:id/reject',async(req,res,next)=>{try{
 }catch(e){next(e);}});
 adminRouter.post('/people',async(req,res)=>{
   const id=req.body.id || `m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-  const doc={id,fullName:String(req.body.fullName||'').trim(),username:String(req.body.username||'').trim().toLowerCase(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),active:req.body.active!==false,groups:Array.isArray(req.body.groups)?req.body.groups:['members'],ministries:Array.isArray(req.body.ministries)?req.body.ministries:[],serviceAvailability:Array.isArray(req.body.serviceAvailability)?req.body.serviceAvailability:[],unavailability:Array.isArray(req.body.unavailability)?req.body.unavailability:[],allowSameDayMultipleServices:req.body.allowSameDayMultipleServices===true,adminAccess:false,churchAdministrator:false,createdAt:nowIso()};
+  const doc={id,fullName:String(req.body.fullName||'').trim(),username:String(req.body.username||'').trim().toLowerCase(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),active:req.body.active!==false,groups:Array.isArray(req.body.groups)?req.body.groups:['members'],ministries:Array.isArray(req.body.ministries)?req.body.ministries:[],serviceAvailability:Array.isArray(req.body.serviceAvailability)?req.body.serviceAvailability:[],unavailability:Array.isArray(req.body.unavailability)?req.body.unavailability:[],allowSameDayMultipleServices:req.body.allowSameDayMultipleServices===true,adminAccess:false,churchAdministrator:false,notificationPreferences:{sms:true,email:true,push:true},childrenProgramEnabled:false,childrenNotificationPreferences:{sms:true,email:true,push:true},createdAt:nowIso()};
   if(!doc.fullName) return res.status(400).json({error:'Name required'});
   await putDoc(tableNames.members,req.churchId,id,doc,{username:doc.username,active:doc.active,adminAccess:false,churchAdministrator:false});
   res.status(201).json(doc);
@@ -135,7 +137,7 @@ adminRouter.post('/people',async(req,res)=>{
 adminRouter.put('/people/:id',async(req,res)=>{
   const old=await getDoc(tableNames.members,req.churchId,req.params.id); if(!old) return res.status(404).json({error:'Member not found'});
   const protectedAdmin={adminAccess:old.adminAccess===true,churchAdministrator:old.churchAdministrator===true};
-  const doc={...old,...req.body,id:old.id,username:old.username||'',...protectedAdmin,updatedAt:nowIso()};
+  const doc={...old,...req.body,id:old.id,username:old.username||'',...protectedAdmin,notificationPreferences:{...(old.notificationPreferences||{}),...(req.body.notificationPreferences||{})},childrenNotificationPreferences:{...(old.childrenNotificationPreferences||{}),...(req.body.childrenNotificationPreferences||{})},updatedAt:nowIso()};
   await putDoc(tableNames.members,req.churchId,doc.id,doc,{username:doc.username||'',active:doc.active!==false,adminAccess:doc.adminAccess===true,churchAdministrator:doc.churchAdministrator===true});
   if(doc.username){const user=await getDoc(tableNames.users,req.churchId,doc.username);if(user){user.active=doc.active!==false;user.groups=doc.groups||user.groups||[];await putDoc(tableNames.users,req.churchId,user.username,user,{memberId:doc.id,active:user.active,adminAccess:user.adminAccess===true,churchAdministrator:user.churchAdministrator===true});if(!user.active)await destroyAllUserSessions(req.churchId,user.username);}}
   res.json(doc);
@@ -153,6 +155,14 @@ adminRouter.post('/people/:id/provision-account',async(req,res)=>{
   await destroyAllUserSessions(req.churchId,username); await securityEvent(req,'account_provisioned',{username,memberId:member.id});
   res.status(201).json({ok:true,username});
 });
+
+
+adminRouter.get('/reports/catalog',async(req,res)=>res.json(reportCatalog));
+adminRouter.get('/reports/:type',async(req,res,next)=>{try{res.json(await buildReport(req.churchId,req.params.type,{from:String(req.query.from||''),to:String(req.query.to||'')}));}catch(e){next(e);}});
+adminRouter.get('/reports/:type/export',async(req,res,next)=>{try{const format=String(req.query.format||'pdf').toLowerCase(),report=await buildReport(req.churchId,req.params.type,{from:String(req.query.from||''),to:String(req.query.to||'')}),stamp=new Date().toISOString().slice(0,10),name=`westbury-${req.params.type}-${stamp}`;if(format==='csv'){res.type('text/csv');res.setHeader('Content-Disposition',`attachment; filename=${name}.csv`);return res.send(reportCsv(report));}if(format==='xlsx'||format==='excel'){res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.setHeader('Content-Disposition',`attachment; filename=${name}.xlsx`);return res.send(await reportXlsx(report));}if(format==='pdf'){res.type('application/pdf');res.setHeader('Content-Disposition',`attachment; filename=${name}.pdf`);return res.send(await reportPdf(report));}return res.status(400).json({error:'format must be csv, xlsx, or pdf'});}catch(e){next(e);}});
+
+adminRouter.get('/children',async(req,res)=>{const [children,checkIns,members]=await Promise.all([listDocs(tableNames.children,req.churchId,{max:5000}),listDocs(tableNames.childCheckIns,req.churchId,{max:10000}),listDocs(tableNames.members,req.churchId,{max:10000})]);res.json({children,checkIns:checkIns.sort((a,b)=>String(b.checkInAt||'').localeCompare(String(a.checkInAt||''))),members:members.filter(x=>x.childrenProgramEnabled===true).map(x=>({id:x.id,fullName:x.fullName,email:x.email||'',phone:x.phone||''}))});});
+adminRouter.post('/children/check-ins/:id/pickup',async(req,res,next)=>{try{const row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row)return res.status(404).json({error:'Check-in not found'});if(row.status!=='checked_in')return res.status(409).json({error:'Child is not currently checked in'});if(req.body.pickupCode&&String(req.body.pickupCode)!==String(row.pickupCode||''))return res.status(403).json({error:'Pickup code does not match'});row.status='picked_up';row.pickupAt=nowIso();row.pickedUpBy=req.identity?.member?.id||'';await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||''});await appendHistory(req.churchId,{eventType:'children.pickup',memberId:row.memberId,dateISO:row.dateISO||'',source:'admin',details:{childId:row.childId,childName:row.childName,checkInId:row.id,releasedBy:row.pickedUpBy}});const member=await getDoc(tableNames.members,req.churchId,row.memberId);if(member){const prefs=member.childrenNotificationPreferences||{};for(const channel of ['sms','email','push']){if(channel==='sms'&&prefs.sms===false)continue;if(channel==='email'&&prefs.email===false)continue;if(channel==='push'&&prefs.push===false)continue;await enqueue({churchId:req.churchId,eventKey:`children-pickup:${row.id}:${row.pickupAt}`,channel,member,subject:'Westbury Church Hub - Children pickup',message:`${row.childName} was picked up at ${row.pickupAt}.`,metadata:{type:'children.pickup',checkInId:row.id,childId:row.childId,route:'children'}});}}res.json({ok:true,row});}catch(e){next(e);}});
 
 adminRouter.post('/schedule/generate',async(req,res)=>res.json(await generateThreeWeekSchedule(req.churchId,{source:'admin'})));
 adminRouter.get('/schedule/programs',async(req,res)=>{

@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
+test('V3.5 rebrands frontend as Westbury Church Hub',()=>{assert.match(read('public/index.html'),/Westbury Church Hub/);assert.match(read('public/manifest.webmanifest'),/Westbury Church Hub/);assert.equal(JSON.parse(read('package.json')).version,'3.5.0');});
+test('V3.5 records detailed successful notification outcomes',()=>{const push=read('src/communications/push.js'),svc=read('src/communications/service.js'),n=read('src/communications/notifications.js');assert.match(push,/successCount/);assert.match(push,/messageIds/);assert.match(svc,/\[NOTIFY\]/);assert.match(n,/status:'skipped'/);});
+test('V3.5 routes song and replacement operational alerts to active responsible admin',()=>{const member=read('src/routes/member.js'),rep=read('src/services/replacements.js');assert.match(member,/songs-submitted/);assert.match(member,/channels:\['sms','push'\]/);assert.match(rep,/channels:\['sms','push'\]/);});
+test('V3.5 supports independent member notification preferences',()=>{const member=read('src/routes/member.js'),app=read('public/assets/app.js');assert.match(member,/emailNotificationsEnabled/);assert.match(member,/smsNotificationsEnabled/);assert.match(app,/smsNotificationsEnabled/);assert.match(app,/emailNotificationsEnabled/);});
+test('V3.5 adds leadership reports with CSV XLSX and PDF',()=>{const a=read('src/routes/admin.js'),r=read('src/services/reporting.js');assert.match(a,/reports\/catalog/);assert.match(a,/format==='xlsx'/);assert.match(r,/ExcelJS/);assert.match(r,/PDFDocument/);assert.match(r,/churchName/);});
+test('V3.5 adds children enrollment check-in pickup and reporting tables',()=>{const c=read('src/config.js'),m=read('src/routes/member.js'),a=read('src/routes/admin.js');assert.match(c,/Children/);assert.match(c,/ChildCheckIns/);assert.match(m,/children\/enrollment/);assert.match(m,/pickupCode/);assert.match(read('src/services/reporting.js'),/id:'children'/);});

@@ -33,7 +33,7 @@ publicRouter.post('/visitor-contact',publicWriteLimiter,async(req,res)=>{
   const doc={id,kind:'visitor_contact',fullName:String(req.body.fullName||'').trim(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),address:String(req.body.address||'').trim(),firstVisit:req.body.firstVisit===true,prayerRequest:String(req.body.prayerRequest||'').trim(),interests:Array.isArray(req.body.interests)?req.body.interests:[],createdAt:nowIso(),status:'new'};
   if(!doc.fullName) return res.status(400).json({error:'Name is required.'});
   await putDoc(tableNames.visitorContacts,req.churchId,id,doc,{status:'new',createdAt:doc.createdAt});
-  await enqueueAdminAlert(req.churchId,{type:'visitor',id,summary:`New visitor form from ${doc.fullName}. Open the Church Scheduler Admin console.`});
+  await enqueueAdminAlert(req.churchId,{type:'visitor',id,summary:`New visitor form from ${doc.fullName}. Open the Church Hub Admin console.`});
   res.status(201).json({ok:true,id});
 });
 publicRouter.post('/member-access-request',publicWriteLimiter,async(req,res)=>{

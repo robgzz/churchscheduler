@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { tableNames, config } from '../config.js';
 import { listDocs, getDoc, createDoc, putDoc, nowIso } from '../storage/repository.js';
-import { sendEmail, sendSms, sendPush } from './service.js';
+import { sendEmail, sendSms, sendPush, logNotification } from './service.js';
 
 const clean=v=>String(v||'').trim();
 const escapeHtml=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -12,7 +12,8 @@ function contactEnabled(m,channel){const prefs=m?.notificationPreferences||{}; i
 function e164(phone){let p=clean(phone).replace(/[^\d+]/g,''); if(!p)return ''; if(p.startsWith('+'))return p; if(p.length===10)return `+1${p}`; if(p.length===11&&p.startsWith('1'))return `+${p}`; return p;}
 
 export async function enqueue({churchId,eventKey,channel,member,subject='',message,html='',notBefore=new Date().toISOString(),metadata={}}){
-  if(!member?.id||!contactEnabled(member,channel))return false;
+  if(!member?.id)return false;
+  if(!contactEnabled(member,channel)){await logNotification(churchId,{channel,status:'skipped',recipient:channel==='push'?member.id:(channel==='sms'?e164(member.phone):clean(member.email)),eventKey,memberId:member.id,metadata:{...metadata,reason:channel==='sms'&&!clean(member.phone)?'no_phone':channel==='email'&&!clean(member.email)?'no_email':'preference_disabled'}});return false;}
   const id=queueId(eventKey,channel,member.id), recipient=channel==='sms'?e164(member.phone):channel==='push'?member.id:clean(member.email);
   try{await createDoc(tableNames.notificationQueue,churchId,id,{id,eventKey,channel,memberId:member.id,recipient,subject,message,html,notBefore,status:'pending',attempts:0,createdAt:nowIso(),metadata},{status:'pending',channel,memberId:member.id,notBefore,eventKey});return true;}catch(e){if(e.statusCode===409||e.code==='EntityAlreadyExists')return false;throw e;}
 }
@@ -57,6 +58,6 @@ export async function enqueueAssignmentNotifications(churchId){
 
 export async function dispatchQueue(churchId,{max=250}={}){
   const rows=(await listDocs(tableNames.notificationQueue,churchId,{filter:`status eq 'pending'`,max:2000})).filter(r=>String(r.notBefore||'')<=nowIso()).slice(0,max); let sent=0,failed=0;
-  async function deliver(q){try{if(q.channel==='email')await sendEmail({churchId,to:q.recipient,subject:q.subject,text:q.message,html:q.html||'',eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='sms')await sendSms({churchId,to:q.recipient,message:q.message,eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='push')await sendPush({churchId,memberId:q.memberId,title:q.subject||'Church Scheduler',message:q.message,eventKey:q.eventKey,metadata:q.metadata});else throw new Error(`Unsupported notification channel: ${q.channel}`);q.status='sent';q.sentAt=nowIso();sent++;}catch(e){q.attempts=(q.attempts||0)+1;q.lastError=String(e.message||e).slice(0,500);q.status=q.attempts>=3?'failed':'pending';failed++;}await putDoc(tableNames.notificationQueue,churchId,q.id,q,{status:q.status,channel:q.channel,memberId:q.memberId,notBefore:q.notBefore,eventKey:q.eventKey});}
+  async function deliver(q){try{if(q.channel==='email')await sendEmail({churchId,to:q.recipient,subject:q.subject,text:q.message,html:q.html||'',eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='sms')await sendSms({churchId,to:q.recipient,message:q.message,eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='push')await sendPush({churchId,memberId:q.memberId,title:q.subject||'Church Hub',message:q.message,eventKey:q.eventKey,metadata:q.metadata});else throw new Error(`Unsupported notification channel: ${q.channel}`);q.status='sent';q.sentAt=nowIso();sent++;}catch(e){q.attempts=(q.attempts||0)+1;q.lastError=String(e.message||e).slice(0,500);q.status=q.attempts>=3?'failed':'pending';failed++;}await putDoc(tableNames.notificationQueue,churchId,q.id,q,{status:q.status,channel:q.channel,memberId:q.memberId,notBefore:q.notBefore,eventKey:q.eventKey});}
   for(let i=0;i<rows.length;i+=20)await Promise.all(rows.slice(i,i+20).map(deliver));return {processed:rows.length,sent,failed};
 }

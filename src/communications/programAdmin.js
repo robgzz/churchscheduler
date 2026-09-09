@@ -8,6 +8,7 @@ import { threeWeekWindow } from '../scheduler/dates.js';
 
 function lang(member){return member?.preferences?.locale==='en'?'en':'es';}
 function displayChurch(settings,locale){return locale==='en'?(settings.churchNameEn||settings.churchName||'Church'):(settings.churchNameEs||settings.churchName||'Iglesia');}
+const legacyChannels=['sms','email'];
 function notificationId(eventKey,memberId){return `app_${crypto.createHash('sha256').update(`${eventKey}|${memberId}`).digest('hex').slice(0,32)}`;}
 
 export async function getProgramAdmin(churchId){
@@ -42,14 +43,13 @@ export async function createAppNotification(churchId,member,{eventKey,title,mess
   }catch(e){if(e.statusCode===409||e.code==='EntityAlreadyExists')return false;throw e;}
 }
 
-export async function notifyProgramAdmin(churchId,{eventKey,type,titleEn,titleEs,messageEn,messageEs,metadata={}}){
+export async function notifyProgramAdmin(churchId,{eventKey,type,titleEn,titleEs,messageEn,messageEs,metadata={},channels=[...legacyChannels,'push']}){
   const admin=await getProgramAdmin(churchId); if(!admin)return {notified:false,reason:'no_program_admin'};
   const settings=await getDoc(tableNames.settings,churchId,'church')||{};
   const locale=lang(admin),title=locale==='en'?titleEn:titleEs,message=locale==='en'?messageEn:messageEs,churchName=displayChurch(settings,locale);
   await createAppNotification(churchId,admin,{eventKey,title,message,metadata:{type,...metadata}});
   let queued=0;
-  const legacyChannels=['sms','email'];
-  for(const channel of [...legacyChannels,'push']){
+  for(const channel of channels){
     if(await enqueue({churchId,eventKey,channel,member:admin,subject:title,message:`${churchName}: ${message}`,metadata:{type,...metadata}}))queued++;
   }
   return {notified:true,memberId:admin.id,queued};
