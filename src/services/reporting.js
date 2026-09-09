@@ -42,7 +42,7 @@ export async function buildReport(churchId,type,{from='',to=''}={}){
   } else if(type==='petitions'){
     rows=pf.map(p=>({Created:p.createdAt||'',Member:p.memberName||mm.get(p.memberId)||'',Privacy:p.private===true?'Private':'Public',Status:p.status||'',Summary:p.private===true?'Private petition — content withheld from report':safe(p.text).slice(0,160)}));
   } else if(type==='children'){
-    rows=kif.map(c=>({Date:c.dateISO||safe(c.checkInAt).slice(0,10),Child:c.childName||'',Age:c.childAge??'',ParentGuardian:mm.get(c.memberId)||c.memberId||'',CheckIn:c.checkInAt||'',Pickup:c.pickupAt||'',Status:c.status||'',Service:sm.get(c.serviceId)||c.serviceId||'',CheckedInBy:mm.get(c.checkedInBy)||c.checkedInBy||'',PickedUpBy:mm.get(c.pickedUpBy)||c.pickedUpBy||''}));
+    rows=kif.map(c=>({Date:c.dateISO||safe(c.checkInAt).slice(0,10),Child:c.childName||'',Age:c.childAge??'',Gender:c.childGender||'',CareArea:c.careArea||'',ParentGuardian:mm.get(c.memberId)||c.memberId||'',SpecialInstructions:c.specialInstructions||'',CheckIn:c.checkInAt||'',Pickup:c.pickupAt||'',Status:c.status||'',Service:sm.get(c.serviceId)||c.serviceId||'',ParentAlerts:hf.filter(h=>h.eventType==='children.parent_alert'&&h.details?.checkInId===c.id).length,CheckedInBy:mm.get(c.checkedInBy)||c.checkedInBy||'',PickedUpBy:mm.get(c.pickedUpBy)||c.pickedUpBy||''}));
   }
   return {type,title,church,from,to,generatedAt:new Date().toISOString(),rows,summary};
 }
