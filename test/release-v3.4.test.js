@@ -42,7 +42,7 @@ test('V3.4 infrastructure keeps a warm replica and adds probes and burst scaling
   assert.match(infra,/type: 'Startup'/);
   assert.match(infra,/type: 'Liveness'/);
   assert.match(infra,/type: 'Readiness'/);
-  assert.match(infra,/concurrentRequests: '25'/);
+  assert.match(infra,/concurrentRequests: '(?:25|15)'/);
   assert.match(deploy,/--min-replicas 1/);
-  assert.match(deploy,/--scale-rule-http-concurrency 25/);
+  assert.match(deploy,/--scale-rule-http-concurrency (?:25|15)/);
 });

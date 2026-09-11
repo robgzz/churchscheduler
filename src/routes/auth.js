@@ -20,6 +20,7 @@ authRouter.post('/logout',async(req,res)=>{
   await destroySession(req.churchId,req.cookies?.[SESSION_COOKIE]).catch(()=>{}); clearSessionCookie(res); res.json({ok:true});
 });
 authRouter.get('/me',requireLogin,(req,res)=>res.json({user:safeUser(req.identity.user),member:req.identity.member,csrfToken:req.identity.session.csrfToken}));
+authRouter.get('/csrf',requireLogin,(req,res)=>res.json({csrfToken:req.identity.session.csrfToken}));
 authRouter.post('/change-password',requireLogin,async(req,res)=>{
   const current=String(req.body.currentPassword||'');
   const next=String(req.body.newPassword||'');

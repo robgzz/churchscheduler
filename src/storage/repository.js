@@ -111,6 +111,18 @@ export async function downloadBuffer(containerName, blobName){
   return { buffer:Buffer.concat(chunks), contentType:response.contentType || 'application/octet-stream' };
 }
 
+export async function downloadStream(containerName, blobName){
+  const blob=blobServiceClient().getContainerClient(containerName).getBlockBlobClient(blobName);
+  const response=await blob.download();
+  return {
+    stream:response.readableStreamBody,
+    contentType:response.contentType||'application/octet-stream',
+    contentLength:response.contentLength,
+    etag:response.etag||'',
+    lastModified:response.lastModified
+  };
+}
+
 export async function deleteBlob(containerName, blobName){
   return blobServiceClient().getContainerClient(containerName).deleteBlob(blobName, { deleteSnapshots:'include' });
 }

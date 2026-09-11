@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'node:crypto';
 import { tableNames, config } from '../config.js';
-import { getDoc, listDocs, putDoc, nowIso, downloadBuffer } from '../storage/repository.js';
+import { getDoc, listDocs, putDoc, nowIso, downloadBuffer, downloadStream } from '../storage/repository.js';
 import { publicWriteLimiter } from '../security/rateLimit.js';
 import { enqueueAdminAlert } from '../communications/notifications.js';
 import { normalizedModules } from '../modules/registry.js';
@@ -56,6 +56,13 @@ publicRouter.get('/files/:contentId',async(req,res)=>{
   const groups = req.identity?.member?.groups || req.identity?.user?.groups || [];
   const isMember = groups.includes('members') || groups.includes('worship') || req.identity?.user?.adminAccess===true || req.identity?.user?.churchAdministrator===true;
   if(!isPublic && !isMember) return res.status(403).json({error:'Access denied'});
-  const f=await downloadBuffer(config.attachmentsContainer,doc.attachment.blobName);
-  res.type(f.contentType); res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'; sandbox"); res.setHeader('Content-Disposition',`inline; filename="${(doc.attachment.fileName||'file').replace(/[\r\n"]/g,'')}"`); res.send(f.buffer);
+  const f=await downloadStream(config.attachmentsContainer,doc.attachment.blobName);
+  res.type(f.contentType); res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Content-Security-Policy',"default-src 'none'; frame-ancestors 'none'; sandbox"); res.setHeader('Content-Disposition',`inline; filename="${(doc.attachment.fileName||'file').replace(/[\r\n"]/g,'')}"`);
+  res.setHeader('Cache-Control',doc.published!==false?'public, max-age=86400, immutable':'private, max-age=300');
+  if(f.contentLength!==undefined)res.setHeader('Content-Length',String(f.contentLength));
+  if(f.etag)res.setHeader('ETag',f.etag);
+  if(f.lastModified)res.setHeader('Last-Modified',new Date(f.lastModified).toUTCString());
+  if(req.headers['if-none-match']&&f.etag&&req.headers['if-none-match']===f.etag){f.stream?.destroy?.();return res.status(304).end();}
+  f.stream.on('error',e=>{if(!res.headersSent)res.status(502).end();else res.destroy(e);});
+  f.stream.pipe(res);
 });

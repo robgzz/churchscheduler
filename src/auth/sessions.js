@@ -14,7 +14,7 @@ export async function createSession(churchId, user){
     memberId:user.memberId || null, csrfToken:newCsrfToken(), createdAt:nowIso(), expiresAt
   };
   await createDoc(tableNames.sessions, churchId, doc.id, doc, { expiresAt });
-  return { token, expiresAt };
+  return { token, expiresAt, csrfToken:doc.csrfToken };
 }
 
 export async function readSession(churchId, token){

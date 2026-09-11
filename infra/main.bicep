@@ -68,6 +68,11 @@ var tableList = [
   'NotificationLogs'
   'NotificationQueue'
   'AppNotifications'
+  'Children'
+  'ChildCheckIns'
+  'ChurchEvents'
+  'EventRegistrations'
+  'FollowUps'
 ]
 var blobContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
 var tableContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
@@ -221,7 +226,7 @@ resource webApp 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'AZURE_BLOB_BACKUPS_CONTAINER', value: backupsContainer.name }
             { name: 'COOKIE_SECURE', value: 'true' }
           ]
-          resources: { cpu: json('0.5'), memory: '1Gi' }
+          resources: { cpu: json('1.0'), memory: '2Gi' }
           probes: [
             { type: 'Startup', httpGet: { path: '/healthz', port: 8080, scheme: 'HTTP' }, initialDelaySeconds: 2, periodSeconds: 3, timeoutSeconds: 2, failureThreshold: 20 }
             { type: 'Liveness', httpGet: { path: '/healthz', port: 8080, scheme: 'HTTP' }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
@@ -237,7 +242,7 @@ resource webApp 'Microsoft.App/containerApps@2025-01-01' = {
             name: 'http-requests'
             http: {
               metadata: {
-                concurrentRequests: '25'
+                concurrentRequests: '15'
               }
             }
           }
