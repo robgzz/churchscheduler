@@ -1,4 +1,4 @@
-name: Deploy Church Scheduler V3.4
+name: Deploy Westbury Church Hub V4
 
 on:
   push:
@@ -82,7 +82,7 @@ jobs:
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --name "${{ secrets.AZURE_CONTAINER_JOB_NAME }}" \
             --image "$IMAGE" \
-            --cron-expression "*/5 * * * *" \
+            --cron-expression "* * * * *" \
             --output none
 
       - name: Health check

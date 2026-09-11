@@ -1,8 +1,8 @@
-# Westbury Church Hub V3.4.1
+# Westbury Church Hub V4.0.0
 
 **Westbury-only edition — by Exonuvia.** This package is intentionally dedicated to Westbury Church of Christ and runs as a single-church deployment.
 
-Production PWA for church scheduling, communications, content and audit history. V3 adds modular Azure Communication Services automation, Church Administrator testing, durable notification queueing, assignment reminders, announcement broadcasts, admin alerts, map-aware activity announcements, and audit export.
+Production PWA for modular church operations. V4 adds church-wide module controls, safer Children Care handoffs, strengthened reporting, Events/RSVP, and Follow-up while preserving worship scheduling, communications, content, and audit history.
 
 # Church Hub V2.4
 

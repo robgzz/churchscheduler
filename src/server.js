@@ -15,6 +15,7 @@ import { publicRouter } from './routes/public.js';
 import { memberRouter } from './routes/member.js';
 import { adminRouter } from './routes/admin.js';
 import { ownerRouter } from './routes/owner.js';
+import { hubModulesRouter } from './routes/hubModules.js';
 import { requireCsrf, sameOriginWrite } from './security/csrf.js';
 
 const app=express();
@@ -46,14 +47,15 @@ app.use('/api',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next(
 app.use(sameOriginWrite);
 app.use(attachIdentity);
 app.use(requireCsrf);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'3.5.1'}));
-app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:'3.5.1'});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable'});}});
+app.get('/healthz',(req,res)=>res.json({ok:true,version:'4.0.0'}));
+app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:'4.0.0'});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable'});}});
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);
 app.use('/api/member',memberRouter);
 app.use('/api/admin',adminRouter);
 app.use('/api/owner',ownerRouter);
+app.use('/api/modules',hubModulesRouter);
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../public');
 app.use(express.static(root,{maxAge:config.nodeEnv==='production'?'1h':0,index:false}));
@@ -72,4 +74,4 @@ app.use((err,req,res,next)=>{
 
 await ensureStorage();
 await seedIfNeeded(config.churchId);
-app.listen(config.port,()=>console.log(`Westbury Church Hub V3.5.1 listening on ${config.port}`));
+app.listen(config.port,()=>console.log(`Westbury Church Hub V4.0.0 listening on ${config.port}`));

@@ -4,6 +4,8 @@ import { tableNames, config } from '../config.js';
 import { getDoc, listDocs, putDoc, nowIso, downloadBuffer } from '../storage/repository.js';
 import { publicWriteLimiter } from '../security/rateLimit.js';
 import { enqueueAdminAlert } from '../communications/notifications.js';
+import { normalizedModules } from '../modules/registry.js';
+import { requireModule } from '../modules/registry.js';
 
 export const publicRouter=express.Router();
 publicRouter.get('/bootstrap',async(req,res)=>{
@@ -13,9 +15,10 @@ publicRouter.get('/bootstrap',async(req,res)=>{
   const groups=req.identity?.member?.groups || req.identity?.user?.groups || [];
   const canSeeNews=groups.includes('members') || groups.includes('worship') || req.identity?.user?.adminAccess===true || req.identity?.user?.churchAdministrator===true;
   const allowedKinds=canSeeNews ? ['announcement','bulletin'] : ['bulletin'];
-  const visible=content.filter(x=>x.published!==false && allowedKinds.includes(x.kind)).sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt)));
+  const modules=normalizedModules(church||{});
+  const visible=modules.publications?content.filter(x=>x.published!==false && allowedKinds.includes(x.kind)).sort((a,b)=>String(b.publishedAt||b.createdAt).localeCompare(String(a.publishedAt||a.createdAt))):[];
   const churchView=church?{...church,logoUrl:church.logo?.blobName?`/api/public/church-logo?v=${encodeURIComponent(church.updatedAt||church.logo.blobName)}`:(church.logoUrl||'')}:church;
-  res.json({church:churchView,services:services.filter(s=>s.active!==false),content:visible});
+  res.json({church:churchView,modules,services:modules.worship?services.filter(s=>s.active!==false):[],content:visible});
 });
 
 publicRouter.get('/church-logo',async(req,res)=>{
@@ -28,7 +31,7 @@ publicRouter.get('/church-logo',async(req,res)=>{
   res.status(204).end();
 });
 
-publicRouter.post('/visitor-contact',publicWriteLimiter,async(req,res)=>{
+publicRouter.post('/visitor-contact',requireModule('visitors'),publicWriteLimiter,async(req,res)=>{
   const id=`visitor_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`;
   const doc={id,kind:'visitor_contact',fullName:String(req.body.fullName||'').trim(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),address:String(req.body.address||'').trim(),firstVisit:req.body.firstVisit===true,prayerRequest:String(req.body.prayerRequest||'').trim(),interests:Array.isArray(req.body.interests)?req.body.interests:[],createdAt:nowIso(),status:'new'};
   if(!doc.fullName) return res.status(400).json({error:'Name is required.'});

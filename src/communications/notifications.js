@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { tableNames, config } from '../config.js';
-import { listDocs, getDoc, createDoc, putDoc, nowIso } from '../storage/repository.js';
+import { listDocs, getDoc, createDoc, putDoc, replaceDocIfUnchanged, nowIso } from '../storage/repository.js';
 import { sendEmail, sendSms, sendPush, logNotification } from './service.js';
 
 const clean=v=>String(v||'').trim();
@@ -57,7 +57,8 @@ export async function enqueueAssignmentNotifications(churchId){
 }
 
 export async function dispatchQueue(churchId,{max=250}={}){
-  const rows=(await listDocs(tableNames.notificationQueue,churchId,{filter:`status eq 'pending'`,max:2000})).filter(r=>String(r.notBefore||'')<=nowIso()).slice(0,max); let sent=0,failed=0;
-  async function deliver(q){try{if(q.channel==='email')await sendEmail({churchId,to:q.recipient,subject:q.subject,text:q.message,html:q.html||'',eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='sms')await sendSms({churchId,to:q.recipient,message:q.message,eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='push')await sendPush({churchId,memberId:q.memberId,title:q.subject||'Church Hub',message:q.message,eventKey:q.eventKey,metadata:q.metadata});else throw new Error(`Unsupported notification channel: ${q.channel}`);q.status='sent';q.sentAt=nowIso();sent++;}catch(e){q.attempts=(q.attempts||0)+1;q.lastError=String(e.message||e).slice(0,500);q.status=q.attempts>=3?'failed':'pending';failed++;}await putDoc(tableNames.notificationQueue,churchId,q.id,q,{status:q.status,channel:q.channel,memberId:q.memberId,notBefore:q.notBefore,eventKey:q.eventKey});}
+  const staleBefore=new Date(Date.now()-10*60000).toISOString();
+  const rows=(await listDocs(tableNames.notificationQueue,churchId,{max:5000})).filter(r=>(r.status==='pending'&&String(r.notBefore||'')<=nowIso())||(r.status==='processing'&&String(r.claimedAt||'')<staleBefore)).slice(0,max); let sent=0,failed=0;
+  async function deliver(q){try{const etag=q._etag;q.status='processing';q.claimedAt=nowIso();await replaceDocIfUnchanged(tableNames.notificationQueue,churchId,q.id,q,{status:q.status,channel:q.channel,memberId:q.memberId,notBefore:q.notBefore,eventKey:q.eventKey},etag);if(q.channel==='email')await sendEmail({churchId,to:q.recipient,subject:q.subject,text:q.message,html:q.html||'',eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='sms')await sendSms({churchId,to:q.recipient,message:q.message,eventKey:q.eventKey,memberId:q.memberId,metadata:q.metadata});else if(q.channel==='push')await sendPush({churchId,memberId:q.memberId,title:q.subject||'Church Hub',message:q.message,eventKey:q.eventKey,metadata:q.metadata});else throw new Error(`Unsupported notification channel: ${q.channel}`);q.status='sent';q.sentAt=nowIso();sent++;}catch(e){if(e.statusCode===412||e.code==='UpdateConditionNotSatisfied')return;q.attempts=(q.attempts||0)+1;q.lastError=String(e.message||e).slice(0,500);q.status=q.attempts>=3?'failed':'pending';q.notBefore=new Date(Date.now()+Math.min(15,2**q.attempts)*60000).toISOString();failed++;}await putDoc(tableNames.notificationQueue,churchId,q.id,q,{status:q.status,channel:q.channel,memberId:q.memberId,notBefore:q.notBefore,eventKey:q.eventKey});}
   for(let i=0;i<rows.length;i+=20)await Promise.all(rows.slice(i,i+20).map(deliver));return {processed:rows.length,sent,failed};
 }

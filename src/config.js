@@ -47,4 +47,7 @@ export const tableNames = {
   appNotifications: 'AppNotifications',
   children: 'Children',
   childCheckIns: 'ChildCheckIns'
+  ,events: 'ChurchEvents'
+  ,eventRegistrations: 'EventRegistrations'
+  ,followUps: 'FollowUps'
 };

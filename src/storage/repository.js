@@ -5,7 +5,7 @@ import { tableNames, config } from '../config.js';
 const clients = new Map();
 const readCache = new Map();
 const cacheTtlByTable = new Map([
-  [tableNames.settings, 5*60*1000],
+  [tableNames.settings, 5*1000],
   [tableNames.services, 5*60*1000],
   [tableNames.ministries, 5*60*1000],
   [tableNames.templates, 5*60*1000],
@@ -63,6 +63,12 @@ export async function putDoc(table, churchId, id, doc, indexes={}){
   await client(table).upsertEntity(entity, 'Replace');
   invalidateTableCache(table,churchId);
   return doc;
+}
+
+export async function replaceDocIfUnchanged(table,churchId,id,doc,indexes={},etag=''){
+  const entity=entityFromDoc(churchId,id,doc,indexes);
+  await client(table).updateEntity(entity,'Replace',{etag:etag||doc?._etag||'*',matchConditions:etag||doc?._etag?'IfNotModified':'Unconditionally'});
+  invalidateTableCache(table,churchId);return doc;
 }
 
 export async function createDoc(table, churchId, id, doc, indexes={}){

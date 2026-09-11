@@ -15,6 +15,7 @@ import { auditRows, toCsv, toExcelXml, toPdf } from '../services/auditExport.js'
 import { syncProgramStatus } from '../communications/programAdmin.js';
 import { reportCatalog, buildReport, reportCsv, reportXlsx, reportPdf } from '../services/reporting.js';
 import { enqueue } from '../communications/notifications.js';
+import { requireModule } from '../modules/registry.js';
 
 function fileSignatureOk(contentType,buf){
   if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
@@ -157,13 +158,16 @@ adminRouter.post('/people/:id/provision-account',async(req,res)=>{
 });
 
 
+adminRouter.use('/reports',requireModule('reports'));
 adminRouter.get('/reports/catalog',async(req,res)=>res.json(reportCatalog));
 adminRouter.get('/reports/:type',async(req,res,next)=>{try{res.json(await buildReport(req.churchId,req.params.type,{from:String(req.query.from||''),to:String(req.query.to||'')}));}catch(e){next(e);}});
-adminRouter.get('/reports/:type/export',async(req,res,next)=>{try{const format=String(req.query.format||'pdf').toLowerCase(),report=await buildReport(req.churchId,req.params.type,{from:String(req.query.from||''),to:String(req.query.to||'')}),stamp=new Date().toISOString().slice(0,10),name=`westbury-${req.params.type}-${stamp}`;if(format==='csv'){res.type('text/csv');res.setHeader('Content-Disposition',`attachment; filename=${name}.csv`);return res.send(reportCsv(report));}if(format==='xlsx'||format==='excel'){res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.setHeader('Content-Disposition',`attachment; filename=${name}.xlsx`);return res.send(await reportXlsx(report));}if(format==='pdf'){res.type('application/pdf');res.setHeader('Content-Disposition',`attachment; filename=${name}.pdf`);return res.send(await reportPdf(report));}return res.status(400).json({error:'format must be csv, xlsx, or pdf'});}catch(e){next(e);}});
+adminRouter.get('/reports/:type/export',async(req,res,next)=>{try{const format=String(req.query.format||'pdf').toLowerCase(),report=await buildReport(req.churchId,req.params.type,{from:String(req.query.from||''),to:String(req.query.to||'')}),stamp=new Date().toISOString().slice(0,10),name=`church-${req.params.type}-${stamp}`;await appendHistory(req.churchId,{eventType:'report.exported',memberId:req.identity?.member?.id||'',source:'admin',details:{type:req.params.type,format,from:report.from,to:report.to,rowCount:report.rows.length}});if(format==='csv'){res.type('text/csv');res.setHeader('Content-Disposition',`attachment; filename=${name}.csv`);return res.send(reportCsv(report));}if(format==='xlsx'||format==='excel'){res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.setHeader('Content-Disposition',`attachment; filename=${name}.xlsx`);return res.send(await reportXlsx(report));}if(format==='pdf'){res.type('application/pdf');res.setHeader('Content-Disposition',`attachment; filename=${name}.pdf`);return res.send(await reportPdf(report));}return res.status(400).json({error:'format must be csv, xlsx, or pdf'});}catch(e){next(e);}});
 
+adminRouter.use('/children',requireModule('children'));
 adminRouter.get('/children',async(req,res)=>{const [children,checkIns,members]=await Promise.all([listDocs(tableNames.children,req.churchId,{max:5000}),listDocs(tableNames.childCheckIns,req.churchId,{max:10000}),listDocs(tableNames.members,req.churchId,{max:10000})]);res.json({children,checkIns:checkIns.sort((a,b)=>String(b.checkInAt||'').localeCompare(String(a.checkInAt||''))),members:members.filter(x=>x.childrenProgramEnabled===true).map(x=>({id:x.id,fullName:x.fullName,email:x.email||'',phone:x.phone||''}))});});
-adminRouter.post('/children/check-ins/:id/pickup',async(req,res,next)=>{try{const row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row)return res.status(404).json({error:'Check-in not found'});if(row.status!=='checked_in')return res.status(409).json({error:'Child is not currently checked in'});if(req.body.pickupCode&&String(req.body.pickupCode)!==String(row.pickupCode||''))return res.status(403).json({error:'Pickup code does not match'});row.status='picked_up';row.pickupAt=nowIso();row.pickedUpBy=req.identity?.member?.id||'';await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||''});await appendHistory(req.churchId,{eventType:'children.pickup',memberId:row.memberId,dateISO:row.dateISO||'',source:'admin',details:{childId:row.childId,childName:row.childName,checkInId:row.id,releasedBy:row.pickedUpBy}});const member=await getDoc(tableNames.members,req.churchId,row.memberId);if(member){const prefs=member.childrenNotificationPreferences||{};for(const channel of ['sms','email','push']){if(channel==='sms'&&prefs.sms===false)continue;if(channel==='email'&&prefs.email===false)continue;if(channel==='push'&&prefs.push===false)continue;await enqueue({churchId:req.churchId,eventKey:`children-pickup:${row.id}:${row.pickupAt}`,channel,member,subject:'Westbury Church Hub - Children pickup',message:`${row.childName} was picked up at ${row.pickupAt}.`,metadata:{type:'children.pickup',checkInId:row.id,childId:row.childId,route:'children'}});}}res.json({ok:true,row});}catch(e){next(e);}});
+adminRouter.post('/children/check-ins/:id/pickup',async(req,res,next)=>{try{const row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row)return res.status(404).json({error:'Check-in not found'});if(!['checked_in','pickup_requested'].includes(row.status))return res.status(409).json({error:'Child is not currently checked in'});const reason=String(req.body?.overrideReason||'').trim();if(reason.length<10)return res.status(400).json({error:'An override reason of at least 10 characters is required.'});row.status='picked_up';row.pickupAt=nowIso();row.releasedBy=req.identity?.member?.id||'';row.receivedByName=String(req.body?.recipientName||'').trim()||'Administrative override';row.overrideReason=reason;delete row.pickupCodeHash;await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});await appendHistory(req.churchId,{eventType:'children.pickup.override',memberId:row.memberId,dateISO:row.dateISO||'',source:'admin',details:{childId:row.childId,childName:row.childName,checkInId:row.id,releasedBy:row.releasedBy,receivedByName:row.receivedByName,reason}});res.json({ok:true,row});}catch(e){next(e);}});
 
+adminRouter.use('/schedule',requireModule('worship'));
 adminRouter.post('/schedule/generate',async(req,res)=>res.json(await generateThreeWeekSchedule(req.churchId,{source:'admin'})));
 adminRouter.get('/schedule/programs',async(req,res)=>{
   const settings=await getDoc(tableNames.settings,req.churchId,'church') || {timezone:'America/Chicago',weekStartsOn:0};
@@ -225,6 +229,7 @@ adminRouter.put('/templates/:id',async(req,res)=>{
   const next={...old,...req.body,id:old.id,updatedAt:nowIso()}; await putDoc(tableNames.templates,req.churchId,next.id,next,{serviceId:next.serviceId}); res.json(next);
 });
 
+adminRouter.use('/content',requireModule('publications'));
 adminRouter.get('/content',async(req,res)=>res.json(await listDocs(tableNames.content,req.churchId,{max:500})));
 adminRouter.post('/content',async(req,res)=>{
   const id=req.body.id || `content_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
@@ -243,6 +248,7 @@ adminRouter.post('/content',async(req,res)=>{
 adminRouter.delete('/content/:id',async(req,res)=>{await deleteDoc(tableNames.content,req.churchId,req.params.id);res.json({ok:true});});
 
 adminRouter.get('/petitions',async(req,res)=>res.json(await listDocs(tableNames.petitions,req.churchId,{max:500})));
+adminRouter.use('/visitors',requireModule('visitors'));
 adminRouter.get('/visitors',async(req,res)=>res.json(await listDocs(tableNames.visitorContacts,req.churchId,{max:500})));
 adminRouter.get('/songs',async(req,res)=>res.json(await listDocs(tableNames.songs,req.churchId,{max:2000})));
 adminRouter.post('/songs',async(req,res)=>{

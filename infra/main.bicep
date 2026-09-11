@@ -37,8 +37,8 @@ param minReplicas int = 1
 @maxValue(10)
 param maxReplicas int = 6
 
-@description('Scheduler job cron in UTC. Default runs every 5 minutes.')
-param schedulerCron string = '*/5 * * * *'
+@description('Scheduler and priority communication job cron in UTC. Default runs every minute.')
+param schedulerCron string = '* * * * *'
 
 var suffix = uniqueString(subscription().id, resourceGroup().id)
 var storageName = take(toLower(replace('st${namePrefix}${suffix}', '-', '')), 24)

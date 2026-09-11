@@ -8,6 +8,7 @@ import { communicationStatus, sendEmail, sendSms, sendPush, lastNotificationResu
 import { setProgramAdmin, getProgramAdmin, syncProgramStatus } from '../communications/programAdmin.js';
 import { appendHistory } from '../scheduler/history.js';
 import { parseTabularUpload, importSongs, importMembersAndAssignments, rowsToCsv, rowsToExcelXml, songTemplateRows, memberTemplateRows } from '../services/bulkImport.js';
+import { moduleCatalog, moduleState, updateModules } from '../modules/registry.js';
 
 export const ownerRouter=express.Router();
 ownerRouter.use(requireOwner);
@@ -17,6 +18,8 @@ ownerRouter.put('/advanced',async(req,res)=>{
   const next={...old,...req.body,id:'church',updatedAt:nowIso()};
   await putDoc(tableNames.settings,req.churchId,'church',next); res.json(next);
 });
+ownerRouter.get('/modules',async(req,res)=>res.json({catalog:moduleCatalog,state:await moduleState(req.churchId)}));
+ownerRouter.put('/modules',async(req,res,next)=>{try{const state=await updateModules(req.churchId,req.body?.modules,req.identity?.member?.id||'');await appendHistory(req.churchId,{eventType:'modules.updated',memberId:req.identity?.member?.id||'',source:'church_administrator',details:{modules:state}});res.json({ok:true,state});}catch(e){next(e);}});
 ownerRouter.put('/people/:id/admin-access',async(req,res)=>{
   const member=await getDoc(tableNames.members,req.churchId,req.params.id); if(!member) return res.status(404).json({error:'Member not found'});
   if(member.churchAdministrator===true && req.body.adminAccess===false) return res.status(409).json({error:'Transfer Church Administrator ownership before removing this access.'});
