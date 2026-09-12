@@ -28,7 +28,12 @@ const patterns=[
  P('summary','summary',['esta semana','this week','resumen','summary'])
 ];
 function scorePattern(text,p){let s=0,e=[];for(const x of p.patterns){if(text.includes(x)){s+=x.includes(' ')?4:2;e.push(`${p.domain}:${x}`);}}return {s:s*p.weight,e};}
-export function detectDomain(text){
+export function detectDomain(text,{actor}={}){
+  const admin=Boolean(actor?.isAdmin);
+  const memberEligibilityChange=admin&&/\b(cambia|cambiar|modifica|modificar|edita|editar|actualiza|actualizar|pon|poner|quita|quitar|agrega|agregar|asigna|asignar|remueve|remover|change|update|edit|add|remove|assign|eligible|ineligible|puede servir|no puede servir|no debe servir|can serve|cannot serve|can sing|no canta)\b/.test(text)&&/\b(miembro|member|ministerio|ministerios|ministry|ministries|cantos?|songs?|clase|class|meditacion|sermon|peticiones|comunion|ofrenda|vigilancia|seguridad|bienvenida|lectura|oracion|prayer|worship|adoracion|miercoles|wednesday|domingo|sunday)\b/.test(text);
+  if(memberEligibilityChange)return {domain:'members',resource:'eligibility',score:20,evidence:['members:eligibility-change'],second:null};
+  const memberEligibilityQuery=admin&&(/\b(que ministerio|que ministerios|en que ministerio|en que ministerios|ministerio de|ministerios de|what ministry|what ministries|ministry eligibility|elegibilidad ministerial)\b/.test(text)||/\b(puede|can)\b.*\b(servir|cantar|serve|sing)\b/.test(text));
+  if(memberEligibilityQuery)return {domain:'members',resource:'eligibility',score:18,evidence:['members:eligibility-query'],second:null};
   const month=/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|january|february|march|april|may|june|july|august|september|october|november|december)\b/.test(text);
   const thirdPartyHistory=month&&/\b(particip\w*|sirvio|servido|serve|served|participated)\b/.test(text)&&!/\b(mi|mis|me|yo|my|i)\b/.test(text);
   if(thirdPartyHistory)return {domain:'worship',resource:'participation',score:12,evidence:['worship:historical-participation'],second:null};
@@ -72,7 +77,7 @@ export function resolveFrame(frame,{text,actor}){const admin=Boolean(actor?.isAd
     case 'children':
       if(admin&&/\b(todos|todas|activo|activos|admin)\b/.test(text))intent='admin.childrenStatus';else if(/\b(codigo|code)\b/.test(text)&&/\b(no recuerdo|temporal|sin codigo|verification|verify|verificacion)\b/.test(text))intent='children.parentVerification';else if(/\b(codigo|code)\b/.test(text))intent='children.pickupCode';else if(/\b(recoger|recogida|pickup|pick up)\b/.test(text)&&frame.speechAct===SpeechAct.COMMAND)intent='children.pickupRequest';else if(/\b(cuidador|caregiver|roster|salon|room)\b/.test(text))intent='children.workerStatus';else intent='children.status';break;
     case 'members':
-      if(admin&&(frame.operation===Operation.CREATE||/\b(nuevo|nueva|new|cuenta de miembro|member account)\b/.test(text)))intent='admin.memberCreate';else if(admin)intent='admin.memberSearch';break;
+      if(admin&&frame.resource==='eligibility'){const changeEvidence=(frame.evidence||[]).includes('members:eligibility-change')||/\b(excepto|menos|except)\b/.test(text);intent=changeEvidence||[Operation.UPDATE,Operation.CREATE,Operation.ASSIGN,Operation.DELETE,Operation.REQUEST].includes(frame.operation)||frame.speechAct===SpeechAct.COMMAND?'admin.memberEligibilityUpdate':'admin.memberEligibilityQuery';}else if(admin&&(frame.operation===Operation.CREATE||/\b(nuevo|nueva|new|cuenta de miembro|member account)\b/.test(text)))intent='admin.memberCreate';else if(admin)intent='admin.memberSearch';break;
     case 'reports': intent=admin?'admin.reports.query':'unknown';break;
     case 'communications': intent=admin?'admin.communications.query':'unknown';break;
     case 'audit': intent=admin?'admin.audit.query':'unknown';break;

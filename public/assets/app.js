@@ -17,7 +17,7 @@ function modal(html,extraClass=''){ $('#modal-root').innerHTML=`<div class="moda
 function closeModal(){$('#modal-root').innerHTML='';}
 
 function themeMode(){return localStorage.getItem('church-theme')||'system';}
-function applyTheme(mode=themeMode(),persist=true){if(persist)localStorage.setItem('church-theme',mode);const dark=mode==='dark'||(mode==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';$('#theme-color')?.setAttribute('content',dark?'#08111f':'#f7f3ec');$('#theme-btn').textContent=dark?'☀':'☾';$('#theme-btn').title=dark?t('common.light'):t('common.dark');}
+function applyTheme(mode=themeMode(),persist=true){if(persist)localStorage.setItem('church-theme',mode);const dark=mode==='dark'||(mode==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';$('#theme-color')?.setAttribute('content',dark?'#08111f':'#e7ece8');$('#theme-btn').textContent=dark?'☀':'☾';$('#theme-btn').title=dark?t('common.light'):t('common.dark');}
 function toggleTheme(){const dark=document.documentElement.dataset.theme==='dark';applyTheme(dark?'light':'dark');savePreferences().catch(()=>{});}
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(themeMode()==='system')applyTheme('system',false);});
 applyTheme();
@@ -153,11 +153,11 @@ function renderChurch(){
   const content=(state.bootstrap.content||[]).filter(x=>['announcement','bulletin'].includes(x.kind)&&x.published!==false);
   const bulletin=content.filter(x=>x.kind==='bulletin').sort((a,b)=>String(b.publishedAt||'').localeCompare(String(a.publishedAt||'')))[0]||null;
   const announcements=content.filter(x=>x.kind==='announcement').sort((a,b)=>String(b.eventDate||b.publishedAt||'').localeCompare(String(a.eventDate||a.publishedAt||'')));
-  main.innerHTML=`<section class="church-news-hero"><div class="eyebrow">${l('Church News','Noticias de la Iglesia')}</div><h2>${l('Stay connected this week','Mantente al día esta semana')}</h2><p>${l('Your weekly bulletin and the latest church announcements in one friendly place.','Tu boletín semanal y los anuncios más recientes en un solo lugar.')}</p></section>
-  <div class="news-divider"><div><div class="eyebrow">${l('Sunday bulletin','Boletín del domingo')}</div><h3>${l('This week’s bulletin','Boletín de esta semana')}</h3></div></div>
-  <section class="bulletin-feature">${bulletin?contentCards([bulletin]):`<div class="card empty">${l('No bulletin has been posted for this week yet.','Todavía no se ha publicado el boletín de esta semana.')}</div>`}</section>
-  <div class="news-divider"><div><div class="eyebrow">${l('What’s happening','Lo que está pasando')}</div><h3>${l('Announcements','Anuncios')}</h3></div></div>
-  ${contentCards(announcements)}`;
+  main.innerHTML=`<section class="church-news-hero"><div class="news-confetti news-confetti-one">✦</div><div class="news-confetti news-confetti-two">●</div><div class="news-hero-icon">📰</div><div class="eyebrow">${l('Church News','Noticias de la Iglesia')}</div><h2>${l('Good things are happening','Hay buenas noticias')}</h2><p>${l('Your Sunday bulletin, upcoming activities and church family news — all in one place.','Tu boletín del domingo, próximas actividades y noticias de la familia de la iglesia — todo en un solo lugar.')}</p><div class="news-hero-chips"><span>☀ ${l('This week','Esta semana')}</span><span>📍 ${announcements.length} ${l('announcement(s)','anuncio(s)')}</span></div></section>
+  <div class="news-section-heading bulletin-heading"><span class="news-section-icon">📖</span><div><div class="eyebrow">${l('Sunday bulletin','Boletín del domingo')}</div><h3>${l('This week’s bulletin','Boletín de esta semana')}</h3><p>${l('One bulletin at a time — always the latest Sunday edition.','Un boletín a la vez — siempre la edición dominical más reciente.')}</p></div></div>
+  <section class="bulletin-feature">${bulletin?contentCards([bulletin]):`<div class="news-empty"><span>📭</span><strong>${l('The new bulletin is on its way','El nuevo boletín viene en camino')}</strong><small>${l('Check back before Sunday service.','Vuelve a revisar antes del servicio del domingo.')}</small></div>`}</section>
+  <div class="news-section-heading announcements-heading"><span class="news-section-icon">📣</span><div><div class="eyebrow">${l('What’s happening','Lo que está pasando')}</div><h3>${l('Announcements & activities','Anuncios y actividades')}</h3><p>${l('Dates, places and updates from our church family.','Fechas, lugares y novedades de nuestra familia de la iglesia.')}</p></div></div>
+  <section class="announcement-board">${contentCards(announcements)}</section>`;
 }
 async function renderPetitions(){
   if(!isMember()){ state.tab='home'; return renderApp(); }

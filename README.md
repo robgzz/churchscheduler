@@ -1,6 +1,14 @@
-# Westbury Church Hub V5.2.0
+# Westbury Church Hub V5.4.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
+
+## V5.3 service-aware eligibility and softer UI
+
+V5.3 replaces global-only ministry checkboxes with service-aware ministry eligibility. Every active service is listed under every ministry in the People editor; when a ministry exists in that service program template, an administrator can independently enable or disable it for that member. New services appear automatically without code changes. Overall service availability remains a separate master switch.
+
+The member-facing Church News area is refreshed with a friendlier Sunday bulletin feature and announcement board, and the Light theme now uses a softer stone/sage palette to reduce glare.
+
+See `RELEASE-NOTES-V5.4.0.md`, `docs/SERVICE-AWARE-ELIGIBILITY-V5.3.md`, and `docs/V5.3-UPGRADE.md`.
 
 ## V5.2 roster import reliability
 
@@ -23,7 +31,7 @@ Key properties:
 - all writes remain permission-gated, module-gated and confirmation-controlled
 - legacy resolver retained only as a compatibility fallback
 
-See `RELEASE-NOTES-V5.2.0.md`, `docs/DCE-V5.0.md`, and `docs/V5.2-UPGRADE.md`.
+See `RELEASE-NOTES-V5.4.0.md`, `docs/DCE-V5.0.md`, and `docs/V5.2-UPGRADE.md`.
 
 # Church Hub V2.4
 

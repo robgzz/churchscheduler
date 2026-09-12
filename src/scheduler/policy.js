@@ -9,7 +9,7 @@ export function hardEligible(member,{ministryId,serviceId,assignmentKey='',dateI
   if (excludeMemberIds.has(member.id)) return false;
   if (!(member.ministries || []).includes(ministryId)) return false;
   if (!(member.serviceAvailability || []).includes(serviceId)) return false;
-  if(member.assignmentEligibilityMode==='explicit' && Array.isArray(member.assignmentEligibility) && member.assignmentEligibility.length){
+  if(member.assignmentEligibilityMode==='explicit' && Array.isArray(member.assignmentEligibility)){
     const token=`${serviceId}::${assignmentKey}`;
     if(!assignmentKey || !member.assignmentEligibility.includes(token)) return false;
   }

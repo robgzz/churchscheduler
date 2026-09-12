@@ -7,7 +7,7 @@ const cancellation=rx(['cancela','cancelar','cancel','olvidalo','dejalo','never 
 const rejection=rx(['no','nope','nah']);
 const correction=rx(['no,?','mejor','quise decir','correccion','correction','i mean']);
 const openWords=rx(['abre','abrir','ve','llevame','open','go','take me']);
-const commandWords=rx(['crea','crear','agrega','agregar','asigna','asignar','cambia','cambiar','elimina','eliminar','borra','borrar','sube','subir','publica','publicar','genera','generar','registra','registrame','confirma','solicita','solicitar','marca','oculta','ocultar','activa','activar','desactiva','desactivar','create','add','assign','change','delete','remove','upload','publish','generate','register','request','mark','hide','enable','disable']);
+const commandWords=rx(['make','crea','crear','agrega','agregar','asigna','asignar','cambia','cambiar','elimina','eliminar','borra','borrar','sube','subir','publica','publicar','genera','generar','registra','registrame','confirma','solicita','solicitar','marca','oculta','ocultar','activa','activar','desactiva','desactivar','create','add','assign','change','delete','remove','upload','publish','generate','register','request','mark','hide','enable','disable']);
 
 function detectSpeechAct(n,ctx){const t=n.normalized;if(confirmation.test(t)&&t.split(' ').length<=4)return SpeechAct.CONFIRMATION;if(cancellation.test(t)&&t.split(' ').length<=5)return SpeechAct.CANCELLATION;if(rejection.test(t)&&t.split(' ').length<=4)return SpeechAct.REJECTION;if(correction.test(t)&&ctx?.lastFrame)return SpeechAct.CORRECTION;if(openWords.test(t))return SpeechAct.NAVIGATION;if(n.isQuestion||wh.test(t)||/^(hay|tengo|tenemos|es|esta|estan|do|does|did|is|are|am|have|has|can|could|would|will)\b/.test(t))return SpeechAct.QUERY;if(commandWords.test(t)||n.isRequest)return SpeechAct.COMMAND;if(ctx?.lastFrame&&t.split(' ').length<=7)return SpeechAct.FOLLOW_UP;return SpeechAct.UNKNOWN;}
 function detectOperation(t,act){
@@ -18,9 +18,10 @@ function detectOperation(t,act){
   if(/\b(muestrame|mostrar|lista|listar|show|list)\b/.test(t))return Operation.LIST;
   if(/\b(historial|anteriores|ultima vez|last time|history|previous)\b/.test(t))return Operation.HISTORY;
   if(/\b(estado|status|listo|ready)\b/.test(t))return Operation.STATUS;
+  if(/\b(make|cambia|cambiar|modifica|modificar|edita|editar|actualiza|actualizar|change|update|edit)\b/.test(t))return Operation.UPDATE;
   if(/\b(crea|crear|nuevo|nueva|agrega|agregar|create|new|add)\b/.test(t))return Operation.CREATE;
   if(/\b(asigna|asignar|assign)\b/.test(t))return Operation.ASSIGN;
-  if(/\b(elimina|eliminar|borra|borrar|delete|remove)\b/.test(t))return Operation.DELETE;
+  if(/\b(elimina|eliminar|borra|borrar|quita|quitar|remueve|remover|delete|remove)\b/.test(t))return Operation.DELETE;
   if(/\b(cancela|cancelar|cancel)\b/.test(t))return Operation.CANCEL;
   if(/\b(completa|completar|termine|terminada|done|complete|completed|finished)\b/.test(t))return Operation.COMPLETE;
   if(/\b(oculta|ocultar|quita de mi pantalla|hide|dismiss|remove from my screen)\b/.test(t))return Operation.DISMISS;

@@ -73,8 +73,13 @@ adminRouter.get('/dashboard',async(req,res)=>{
 });
 
 adminRouter.get('/people',async(req,res)=>{
-  const [members,ministries,services]=await Promise.all([listDocs(tableNames.members,req.churchId),listDocs(tableNames.ministries,req.churchId),listDocs(tableNames.services,req.churchId)]);
-  res.json({members:members.sort((a,b)=>a.fullName.localeCompare(b.fullName,'es')),ministries,services});
+  const [members,ministries,services,templates]=await Promise.all([
+    listDocs(tableNames.members,req.churchId),
+    listDocs(tableNames.ministries,req.churchId),
+    listDocs(tableNames.services,req.churchId),
+    listDocs(tableNames.templates,req.churchId)
+  ]);
+  res.json({members:members.sort((a,b)=>a.fullName.localeCompare(b.fullName,'es')),ministries,services,templates});
 });
 
 function memberExportRows(members,ministries,services){
@@ -86,6 +91,7 @@ function memberExportRows(members,ministries,services){
     Ministries:(m.ministries||[]).map(id=>ministryMap.get(id)||id).join('; '),
     Services:(m.serviceAvailability||[]).map(id=>serviceMap.get(id)||id).join('; '),
     AssignmentEligibility:(m.assignmentEligibility||[]).join('; '),
+    AssignmentEligibilityMode:m.assignmentEligibilityMode||'',
     Unavailability:(m.unavailability||[]).map(x=>`${x.from||''}..${x.to||''}${x.note?` (${x.note})`:''}`).join('; '),
     CreatedAt:m.createdAt||'',UpdatedAt:m.updatedAt||''
   }));
@@ -131,7 +137,7 @@ adminRouter.post('/member-access/:id/reject',async(req,res,next)=>{try{
 }catch(e){next(e);}});
 adminRouter.post('/people',async(req,res)=>{
   const id=req.body.id || `m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-  const doc={id,fullName:String(req.body.fullName||'').trim(),username:String(req.body.username||'').trim().toLowerCase(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),active:req.body.active!==false,groups:Array.isArray(req.body.groups)?req.body.groups:['members'],ministries:Array.isArray(req.body.ministries)?req.body.ministries:[],serviceAvailability:Array.isArray(req.body.serviceAvailability)?req.body.serviceAvailability:[],unavailability:Array.isArray(req.body.unavailability)?req.body.unavailability:[],allowSameDayMultipleServices:req.body.allowSameDayMultipleServices===true,adminAccess:false,churchAdministrator:false,notificationPreferences:{sms:true,email:true,push:true},childrenProgramEnabled:req.body.childrenProgramEnabled===true,childrenNotificationPreferences:{sms:true,email:true,push:true},childrenWorkerRoles:[...new Set((Array.isArray(req.body.childrenWorkerRoles)?req.body.childrenWorkerRoles:[]).map(String).filter(x=>['nursery','toddlers'].includes(x)))],createdAt:nowIso()};
+  const doc={id,fullName:String(req.body.fullName||'').trim(),username:String(req.body.username||'').trim().toLowerCase(),email:String(req.body.email||'').trim(),phone:String(req.body.phone||'').trim(),active:req.body.active!==false,groups:Array.isArray(req.body.groups)?req.body.groups:['members'],ministries:Array.isArray(req.body.ministries)?[...new Set(req.body.ministries.map(String))]:[],serviceAvailability:Array.isArray(req.body.serviceAvailability)?[...new Set(req.body.serviceAvailability.map(String))]:[],assignmentEligibility:Array.isArray(req.body.assignmentEligibility)?[...new Set(req.body.assignmentEligibility.map(String).filter(x=>/^[a-z0-9_:-]+$/i.test(x)))]:[],assignmentEligibilityMode:req.body.assignmentEligibilityMode==='explicit'?'explicit':'legacy',unavailability:Array.isArray(req.body.unavailability)?req.body.unavailability:[],allowSameDayMultipleServices:req.body.allowSameDayMultipleServices===true,adminAccess:false,churchAdministrator:false,notificationPreferences:{sms:true,email:true,push:true},childrenProgramEnabled:req.body.childrenProgramEnabled===true,childrenNotificationPreferences:{sms:true,email:true,push:true},childrenWorkerRoles:[...new Set((Array.isArray(req.body.childrenWorkerRoles)?req.body.childrenWorkerRoles:[]).map(String).filter(x=>['nursery','toddlers'].includes(x)))],createdAt:nowIso()};
   if(!doc.fullName) return res.status(400).json({error:'Name required'});
   await putDoc(tableNames.members,req.churchId,id,doc,{username:doc.username,active:doc.active,adminAccess:false,churchAdministrator:false});
   res.status(201).json(doc);
