@@ -1,26 +1,23 @@
-# Westbury Church Hub V4.5.0
+# Westbury Church Hub V5.0.0
 
-## V4.4 highlights
+**Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
 
-- Administrator Console reliability fix: Church Administrator authorization is now consistent on both server and client, and admin/JavaScript assets use cache-busted network-first loading to prevent stale module graphs.
-- Bottom navigation is a true horizontal touch-scroll strip for phones with many modules.
-- Events and assigned tasks disappear from the member screen after the church-local end of their date while their final status remains reportable. Members can cancel or hide them earlier.
-- Members can delete any of their own prayer requests at any time; public prayer visibility still expires automatically after 14 days.
-- Church News now separates one current weekly bulletin from the announcement/news feed with a warmer news-style presentation.
-- Chat Hub uses a broader bilingual/Spanglish deterministic grammar layer in addition to phrase matching, context, typo normalization, permissions, module checks and confirmation workflows.
-- Security/performance review retained CSP/Helmet, same-origin + CSRF write protection, opaque sessions, per-user Chat Hub rate limiting, private Azure storage patterns, compression, server-side module enforcement, health/readiness checks, and Container Apps autoscaling.
+## V5.0 major change
 
-See `RELEASE-NOTES-V4.5.0.md`, `docs/V4.4-UPGRADE.md`, and `docs/CHAT-HUB-V4.4.md`.
+Chat Hub now uses the **Deterministic Conversational Engine (DCE)** as its primary interpretation layer. DCE compiles Spanish, English and Spanglish language into canonical command frames before authorization and execution. It uses no generative AI.
 
-**Westbury-only edition — by Exonuvia.** This package is intentionally dedicated to Westbury Church of Christ and runs as a single-church deployment.
+Key properties:
 
-Production PWA for modular church operations. V4.4 focuses on reliability and lifecycle correctness while making deterministic Chat Hub feel substantially more conversational without granting it any authority beyond the signed-in user's existing permissions.
+- compositional speech-act + operation + domain/resource parsing instead of phrase-only matching
+- structured temporal, service and ministry-role slots
+- structured conversational follow-up context
+- conservative typo correction with protected vocabulary
+- generic query plans for auditability and future application reuse
+- Church Hub-specific domain pack separated from the generic engine
+- all writes remain permission-gated, module-gated and confirmation-controlled
+- legacy resolver retained only as a compatibility fallback
 
-## Chat Hub
-
-Chat Hub remains a normal Church Hub module that the Church Administrator can enable or disable. It does **not** use generative AI. Language is normalized into deterministic intents and entities, scored with bilingual/Spanglish phrase and concept grammar, clarified when ambiguous, permission-checked, module-checked, and executed only through known Church Hub handlers.
-
-V4.4 covers member navigation, service times, assignments, worship-program questions, Cantos search/history, replacements, planned absence, profile/notifications, weekly bulletins, announcements, events/RSVP/hide, tasks/complete/cancel/hide, prayer lists/create/delete, Children Care pickup/recovery/caregiver status, plus authorized administrator console access, members/accounts, scheduling, pending Cantos, publications, events and RSVP lists, visitors/access requests, tasks, prayer review, Children Care status, reports, communications, audit, and module administration.
+See `RELEASE-NOTES-V5.0.0.md`, `docs/DCE-V5.0.md`, and `docs/V5.0-UPGRADE.md`.
 
 # Church Hub V2.4
 

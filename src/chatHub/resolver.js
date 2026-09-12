@@ -11,10 +11,10 @@ const concepts={
   assignment:['asignacion','asignaciones','servir','sirvo','toca','ministerio','turno','programado','scheduled','assigned','serve'],self:['me','mi','mis','yo','my','i'],
   replacement:['reemplazo','reemplazar','reemplace','cubrir','cubra','no puedo servir','quitarme','replacement','replace','cover','cannot serve','cant serve'],
   availability:['no estare','no voy a estar','ausencia','disponible','disponibilidad','voy a faltar','no me programes','unavailable','availability','away'],
-  songs:['cantos','canciones','canto','cancion','song','songs','dirige cantos'],history:['historial','anteriores','pasado','ultima vez','history','previous','last time'],
+  songs:['cantos','canciones','canto','cancion','cantar','canta','cantor','cantores','song','songs','sing','singing','singer','dirige cantos'],history:['historial','anteriores','pasado','ultima vez','history','previous','last time'],
   announcement:['anuncio','anuncios','noticias','confraternidad','fellowship','announcement','announcements'],event:['evento','eventos','event','events'],prayer:['oracion','peticion','peticiones','prayer','petition'],
   pickupCode:['codigo','recoger','recogida','pickup code','code'],children:['hijo','hija','nino','nina','ninos','children','child','kid','nursery','toddlers'],pickup:['recoger','recogida','pickup','pick up'],verification:['verificacion','codigo temporal','sin codigo','no recuerdo el codigo','verification','alternate'],caregiver:['cuidador','cuidadora','salon','area de cuidado','caregiver','room','roster'],
-  program:['programa','programador','listo','ready','program','schedule'],programQuery:['predica','predicar','predicador','sermon','meditacion','mensaje','quien sirve','quien tiene','who is preaching','who has','who is serving','programa del domingo','sunday program','vigilancia','security','comunion','communion','escritura','scripture'],
+  program:['programa','programador','listo','ready','program','schedule'],participation:['participado','participo','participacion','sirvio','servido','participated','participation','served'],programQuery:['predica','predicar','predicador','sermon','meditacion','mensaje','quien sirve','quien tiene','who is preaching','who has','who is serving','programa del domingo','sunday program','vigilancia','security','comunion','communion','escritura','scripture','clase','class','teacher','teaching','maestro','profesor','cantar','canta','sing','singing'],
   pending:['falta','faltan','pendiente','pendientes','pending','missing'],memberSearch:['busca','buscar','encuentra','miembro','miembros','perfil','find','search','member','members'],member:['miembro','miembros','cuenta de miembro','member','member account'],bulletin:['boletin','bulletin'],upload:['sube','subir','carga','upload'],
   count:['cuantos','cuantas','cantidad','numero','how many','count'],list:['que anuncios','que peticiones','cuales','lista','muestrame','mostrar','ver','list','show','what announcements'],rsvp:['rsvp','registrado','registro','confirmacion','asistencia','registered','attendance'],register:['registrame','registrar','acepto','asistir','register','attending','sign me up'],cancel:['cancela','cancelar','ya no voy','cancel','not attending'],dismiss:['oculta','ocultar','quita de mi pantalla','remove from my screen','hide','dismiss'],
   task:['tarea','tareas','task','tasks','seguimiento','follow up'],complete:['completa','completada','termine','terminada','complete','completed','finished','done'],create:['crea','crear','nuevo','nueva','agrega','agregar','publica','asigna','genera','create','new','add','publish','assign','generate'],delete:['elimina','eliminar','borra','borrar','delete','remove'],
@@ -30,13 +30,16 @@ function grammarBoost(id,text,{isAdmin,normalized}){
   const H=c=>has(text,c);
   let s=0;
   if(id==='assignments.mine'&&H('assignment')&&H('self'))s+=42;
-  if(id==='program.query'&&(H('programQuery')||(H('program')&&q)))s+=38;
+  if(id==='program.query'&&(H('programQuery')||(H('program')&&q)))s+=52;
+  if(id==='program.participation'&&H('participation'))s+=58;
   if(id==='replacement.request'&&H('replacement'))s+=42;
   if(id==='availability.add'&&H('availability'))s+=42;
   if(id==='announcements.count'&&H('announcement')&&H('count'))s+=48;
   if(id==='announcements.list'&&H('announcement')&&H('list'))s+=42;
-  if(id==='announcements.query'&&H('announcement')&&q)s+=32;
-  if(id==='events.query'&&H('event')&&q&&!H('rsvp'))s+=34;
+  if(id==='announcements.query'&&H('announcement')&&q)s+=48;
+  if(id==='announcements.query'&&H('event')&&!H('announcement'))s-=70;
+  if(id==='events.query'&&H('event')&&q&&!H('rsvp'))s+=58;
+  if(id==='events.query'&&H('announcement')&&!H('event'))s-=35;
   if(id==='events.myRsvp'&&H('event')&&H('rsvp')&&H('self')&&q)s+=42;
   if(id==='events.register'&&H('event')&&H('register'))s+=48;
   if(id==='events.cancelRsvp'&&H('event')&&H('cancel'))s+=48;
@@ -46,7 +49,7 @@ function grammarBoost(id,text,{isAdmin,normalized}){
   if(id==='tasks.cancel'&&H('task')&&H('cancel'))s+=50;
   if(id==='tasks.dismiss'&&H('task')&&H('dismiss'))s+=52;
   if(id==='prayer.list'&&H('prayer')&&H('list')&&!H('self'))s+=38;
-  if(id==='prayer.mine'&&H('prayer')&&H('self'))s+=38;
+  if(id==='prayer.mine'&&H('prayer')&&(H('self')||/\b(tengo|i have|do i have)\b/.test(text)))s+=52;
   if(id==='prayer.create'&&H('prayer')&&H('create'))s+=52;
   if(id==='prayer.delete'&&H('prayer')&&H('delete'))s+=52;
   if(id==='children.pickupCode'&&H('pickupCode')&&q)s+=40;

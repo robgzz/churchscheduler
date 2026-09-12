@@ -30,8 +30,15 @@ export const intentCatalog=Object.freeze([
     'quien va a predicar','quien predica','quien tiene cantos','quien dirige cantos','quien sirve este domingo','quien sirve el domingo','programa de este domingo','programa del domingo',
     'quien da la meditacion','quien da el sermon','quien tiene vigilancia','quien da la bienvenida','quien tiene comunion','quien tiene la escritura','quien tiene oracion','quien da la clase','quien cierra','quien abre',
     'who is preaching','who has songs','who is serving','who is on the program','sunday program','who has security','who has communion','who is teaching','who has scripture','who has prayer',
-    'quien is preaching','who tiene cantos','show me programa del domingo','who serves este domingo'
+    'quien is preaching','who tiene cantos','show me programa del domingo','who serves este domingo',
+    'quien va a dar la clase del domingo','quien va a dar la clase del miercoles','quien le toca cantar el domingo','quien canta el domingo','quien canta este domingo',
+    'who teaches sunday class','who teaches wednesday class','who is singing sunday','who sings this sunday'
   ],['programQuery']),
+  I('program.participation','read.members',true,[
+    'ha participado','participo en septiembre','participacion de','cuando participo','ha servido este mes','sirvio este mes',
+    'did participate','has participated','participation history','did serve this month','has served this month',
+    'en el mes de septiembre ha participado','did eduardo participate'
+  ],['participation']),
   I('replacement.request','write.self',false,[
     'necesito reemplazo','quiero reemplazo','que alguien me cubra','no puedo servir','reemplazame','sacame de mi asignacion','cambiame de mi asignacion','buscame reemplazo',
     'i need a replacement','cover me','i cannot serve','replace me','get someone to cover me','need someone que me cubra'
@@ -70,13 +77,13 @@ export const intentCatalog=Object.freeze([
     'what announcements are there','list announcements','today announcements','show announcements','church news','show me los anuncios'
   ],['announcement','list']),
   I('announcements.query','read.members',true,[
-    'proximo anuncio','donde es','donde va a ser','cuando es','a que hora','que dice el anuncio','proxima confraternidad','donde es la confraternidad','cuando es la confraternidad',
-    'where is','when is','what time','next fellowship','announcement details','where is la confraternidad','what time es la reunion'
+    'proximo anuncio','que dice el anuncio','proxima confraternidad','hay confraternidad','donde es la confraternidad','donde va a ser la confraternidad','cuando es la confraternidad','a que hora es la confraternidad',
+    'next fellowship','is there a fellowship','announcement details','where is the fellowship','when is the fellowship','what time is the fellowship','where is la confraternidad','what time es la reunion'
   ],['announcement']),
 
   I('events.query','read.members',true,[
     'proximo evento','que eventos hay','cuando es el evento','eventos esta semana','donde es el evento','detalles del evento','eventos proximos',
-    'next event','upcoming events','what events','event details','show events','que events hay'
+    'next event','upcoming events','what events','event details','show events','que events hay','donde es el siguiente evento','donde es el proximo evento','hay eventos','eventos','where is the next event','is there an event'
   ],['event']),
   I('events.myRsvp','read.members',true,[
     'a que eventos estoy registrado','estoy registrado para el evento','mis confirmaciones','mi rsvp','a cuales eventos voy',
@@ -115,7 +122,7 @@ export const intentCatalog=Object.freeze([
     'prayer requests','public prayer','show prayer requests','current prayer requests','show peticiones'
   ],['prayer','list']),
   I('prayer.mine','read.self',true,[
-    'mis peticiones','que peticiones he puesto','mis oraciones','my prayer requests','my petitions','show my prayer requests','show mis peticiones'
+    'mis peticiones','tengo peticiones','que peticiones he puesto','mis oraciones','my prayer requests','do i have prayer requests','my petitions','show my prayer requests','show mis peticiones'
   ],['prayer','self']),
   I('prayer.create','write.self',false,[
     'crear una peticion','crea una peticion','quiero hacer una peticion','agrega una peticion de oracion','quiero pedir oracion','necesito oracion por','pon una peticion',
@@ -135,7 +142,7 @@ export const intentCatalog=Object.freeze([
   ],['children','verification'],{sensitive:true}),
   I('children.status','read.self',true,[
     'mis hijos estan registrados','donde esta mi hijo','donde esta mi hija','estado de mis ninos','quien de mis hijos esta registrado','mis ninos',
-    'child status','where is my child','are my children checked in','my children','where esta mi child'
+    'child status','where is my child','are my children checked in','my children','where esta mi child','nombres de mis ninos','como se llaman mis ninos','names of my children','what are my children names'
   ],['children'],{sensitive:true}),
   I('children.pickupRequest','write.self',false,[
     'quiero recoger a mi hijo','quiero recoger a mi hija','solicitar recogida','traigan a mi hijo','avisa que voy por mi hijo',

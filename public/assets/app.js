@@ -1,4 +1,4 @@
-import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js?v=450';
+import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js?v=500';
 
 const $=(s,r=document)=>r.querySelector(s);
 const main=$('#main'), nav=$('#bottom-nav'), pageTitle=$('#page-title'), churchName=$('#church-name'), logoutBtn=$('#logout-btn'), notificationsBtn=$('#notifications-btn');

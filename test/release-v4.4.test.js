@@ -15,7 +15,7 @@ test('V4.4 server recognizes a Church Administrator stored on the member profile
 
 test('V4.4 protects admin JS from stale PWA module graphs',()=>{
   const sw=read('public/service-worker.js'),server=read('src/server.js'),admin=read('public/assets/admin.js');
-  assert.match(admin,/i18n\.js\?v=45[0]/);
+  assert.match(admin,/i18n\.js\?v=(?:4(?:5|6)0|500)/);
   assert.match(sw,/cache:'no-store'/);
   assert.match(sw,/url\.pathname\.endsWith\('\.js'\)/);
   assert.match(server,/no-cache, no-store, must-revalidate/);
