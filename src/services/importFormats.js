@@ -1,7 +1,22 @@
 import { inflateRawSync } from 'node:zlib';
 const safe=v=>v==null?'':String(v);
 export const norm=v=>safe(v).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
-const IDENTITY_HEADERS=new Set(['full name','name','nombre','nombre completo','first name','last name','first name nombre','last name apellido','username','usuario','email','correo','phone','telefono','teléfono','active','activo']);
+const IDENTITY_HEADERS=new Set(['full name','name','nombre','nombre completo','first name','last name','first name nombre','last name apellido','username','usuario','email','correo','phone','telefono','teléfono','active','activo','ministries','ministerios','services','servicios','assignmenteligibility','assignment eligibility','assignmenteligibilitymode','assignment eligibility mode','admin','administrator','administrador','admin access','churchadministrator','church administrator']);
+
+export function findValue(row={},candidates=[]){
+  const source=row&&typeof row==='object'?row:{};
+  const normalized=new Map(Object.entries(source).map(([key,value])=>[norm(key),value]));
+  for(const candidate of candidates){
+    if(Object.prototype.hasOwnProperty.call(source,candidate))return safe(source[candidate]).trim();
+    const key=norm(candidate);if(normalized.has(key))return safe(normalized.get(key)).trim();
+  }
+  return '';
+}
+export function hasColumn(row={},candidates=[]){
+  const keys=new Set(Object.keys(row||{}).map(norm));
+  return candidates.some(candidate=>keys.has(norm(candidate)));
+}
+
 export function parseCsv(text){
   const rows=[];let row=[],cell='',quoted=false;
   for(let i=0;i<text.length;i++){const ch=text[i];if(quoted){if(ch==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(ch==='"')quoted=false;else cell+=ch;}else if(ch==='"')quoted=true;else if(ch===','){row.push(cell);cell='';}else if(ch==='\n'){row.push(cell.replace(/\r$/,''));rows.push(row);row=[];cell='';}else cell+=ch;}
@@ -10,7 +25,7 @@ export function parseCsv(text){
 export function splitAssignmentHeader(header){const raw=String(header||'').trim();if(!raw||IDENTITY_HEADERS.has(norm(raw)))return null;const parts=raw.split(/\s+-\s+/);if(parts.length<2)return null;const serviceName=parts.shift().trim(),assignmentName=parts.join(' - ').trim();return serviceName&&assignmentName?{serviceName,assignmentName}:null;}
 export function inferServiceSchedule(name){const n=norm(name);let weekday=null;const days=[['sunday','domingo',0],['monday','lunes',1],['tuesday','martes',2],['wednesday','miercoles',3],['thursday','jueves',4],['friday','viernes',5],['saturday','sabado',6]];for(const [en,es,d] of days)if(n.includes(en)||n.includes(es)){weekday=d;break;}let startTime='10:00',timeInferred=false;const explicit=n.match(/\b([01]?\d|2[0-3])[: ]([0-5]\d)\b/);if(explicit){startTime=`${String(Number(explicit[1])).padStart(2,'0')}:${explicit[2]}`;timeInferred=true;}else if(/evening|night|noche|vespertino/.test(n)){startTime='18:00';timeInferred=true;}else if(/afternoon|tarde/.test(n)){startTime='15:00';timeInferred=true;}else if(/morning|manana|matutino/.test(n)){startTime='09:00';timeInferred=true;}return {recurrence:{frequency:'weekly',weekday:weekday??0},startTime,scheduleNeedsReview:weekday==null||!timeInferred};}
 export function songTemplateRows(){return [{Number:'1','Title Spanish':'Santo, Santo, Santo','Title English':'Holy, Holy, Holy',Active:'Yes'},{Number:'2','Title Spanish':'Sublime Gracia','Title English':'Amazing Grace',Active:'Yes'}];}
-export function memberTemplateRows(){return [{'Full Name':'Maria Lopez',Email:'maria@example.com',Phone:'+15551234567',Active:'Yes','Sunday Evening Service - Songs 1':'X','Sunday Evening Service - Songs 2':'','Sunday Evening Service - Sermon':'','Sunday Evening Service - Announcements':'X','Sunday Evening Service - Closing Prayer':''},{'Full Name':'Juan Perez',Email:'',Phone:'',Active:'Yes','Sunday Evening Service - Songs 1':'','Sunday Evening Service - Songs 2':'X','Sunday Evening Service - Sermon':'X','Sunday Evening Service - Announcements':'','Sunday Evening Service - Closing Prayer':'X'}];}
+export function memberTemplateRows(){return [{'Full Name':'Maria Lopez',Email:'maria@example.com',Phone:'+15551234567',Active:'Yes',Admin:'No',ChurchAdministrator:'No','Sunday Evening Service - Songs 1':'X','Sunday Evening Service - Songs 2':'','Sunday Evening Service - Sermon':'','Sunday Evening Service - Announcements':'X','Sunday Evening Service - Closing Prayer':''},{'Full Name':'Juan Perez',Email:'',Phone:'',Active:'Yes',Admin:'No',ChurchAdministrator:'No','Sunday Evening Service - Songs 1':'','Sunday Evening Service - Songs 2':'X','Sunday Evening Service - Sermon':'X','Sunday Evening Service - Announcements':'','Sunday Evening Service - Closing Prayer':'X'}];}
 
 
 function xmlDecode(s=''){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');}

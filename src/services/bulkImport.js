@@ -1,8 +1,9 @@
 import crypto from 'node:crypto';
 import { tableNames } from '../config.js';
 import { getDoc, listDocs, putDoc, nowIso } from '../storage/repository.js';
-import { parseCsv, parseXlsx, parseSpreadsheetXml, splitAssignmentHeader, inferServiceSchedule, songTemplateRows, memberTemplateRows, norm } from './importFormats.js';
+import { parseCsv, parseXlsx, parseSpreadsheetXml, splitAssignmentHeader, inferServiceSchedule, songTemplateRows, memberTemplateRows, norm, findValue, hasColumn } from './importFormats.js';
 import { provisionAccountsBatch } from './accountProvisioning.js';
+import { destroyAllUserSessions } from '../auth/sessions.js';
 export { parseCsv, parseXlsx, parseSpreadsheetXml, splitAssignmentHeader, inferServiceSchedule, songTemplateRows, memberTemplateRows } from './importFormats.js';
 
 const safe=v=>v==null?'':String(v);
@@ -70,33 +71,167 @@ export async function importSongs(churchId,rows){
 }
 
 export async function importMembersAndAssignments(churchId,rows){
-  const [members,services,ministries]=await Promise.all([listDocs(tableNames.members,churchId,{max:10000}),listDocs(tableNames.services,churchId,{max:2000}),listDocs(tableNames.ministries,churchId,{max:2000})]);
-  const byEmail=new Map(members.filter(m=>m.email).map(m=>[norm(m.email),m]));const byName=new Map(members.map(m=>[norm(m.fullName),m]));const servicesByNorm=new Map();for(const s of services){for(const label of [s.label,s.labelEn,s.labelEs])if(label)servicesByNorm.set(norm(label),s);}const ministriesByNorm=new Map();for(const m of ministries){for(const label of [m.label,m.labelEn,m.labelEs])if(label)ministriesByNorm.set(norm(label),m);}
-  const headers=Object.keys(rows[0]||{});const assignmentHeaders=headers.map(h=>({header:h,parsed:splitAssignmentHeader(h)})).filter(x=>x.parsed);
-  const hasSnapshotColumns=['Ministries','Services','AssignmentEligibility'].every(h=>headers.includes(h));
-  const snapshotMode=hasSnapshotColumns&&headers.includes('AssignmentEligibilityMode');
-  const defs=new Map();let servicesCreated=0,assignmentsCreated=0,ministriesCreated=0;
-  for(const {header,parsed} of assignmentHeaders){const beforeService=servicesByNorm.has(norm(parsed.serviceName));const service=await ensureService(churchId,parsed.serviceName,servicesByNorm);if(!beforeService)servicesCreated++;const role=roleBase(parsed.assignmentName);const beforeMin=ministriesByNorm.has(norm(role.labelEn))||ministriesByNorm.has(norm(role.labelEs));const ministry=await ensureMinistry(churchId,parsed.assignmentName,ministriesByNorm);if(!beforeMin)ministriesCreated++;const def=await ensureAssignmentDefinition(churchId,service,parsed.assignmentName,ministry);if(def.created)assignmentsCreated++;defs.set(header,{service,ministry,item:def.item});}
-  let membersCreated=0,membersUpdated=0,skipped=0,eligibilityLinks=0,accountsCreated=0;const accountEntries=[];
-  for(const row of rows){let fullName=findValue(row,['Full Name','Name','Nombre Completo','Nombre']);const first=findValue(row,['First Name','First Name / Nombre','Nombre']);const last=findValue(row,['Last Name','Last Name / Apellido','Apellido']);if(!fullName)fullName=`${first} ${last}`.trim();const email=findValue(row,['Email','Correo']);const phone=findValue(row,['Phone','Telefono','Teléfono']);const username=findValue(row,['Username','Usuario']).toLowerCase();const activeRaw=findValue(row,['Active','Activo']);if(!fullName){skipped++;continue;}let member=(email&&byEmail.get(norm(email)))||byName.get(norm(fullName));const isNew=!member;member=member?{...member}:{id:`m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`,fullName,username,email,phone,active:true,groups:['members','worship'],ministries:[],serviceAvailability:[],unavailability:[],assignmentEligibility:[],assignmentEligibilityMode:'explicit',createdAt:nowIso()};member.fullName=fullName;member.email=email||member.email||'';member.phone=phone||member.phone||'';member.username=username||member.username||'';if(activeRaw)member.active=!FALSEY.has(norm(activeRaw));member.groups=Array.from(new Set([...(member.groups||[]),'members','worship']));member.ministries=Array.from(new Set(member.ministries||[]));member.serviceAvailability=Array.from(new Set(member.serviceAvailability||[]));member.assignmentEligibility=Array.from(new Set(member.assignmentEligibility||[]));member.assignmentEligibilityMode='explicit';
-    if(snapshotMode&&norm(row.AssignmentEligibilityMode)==='explicit'){
-      const requestedMinistries=splitList(row.Ministries);
-      const requestedServices=splitList(row.Services);
-      const requestedEligibility=splitList(row.AssignmentEligibility);
+  if(!Array.isArray(rows)||!rows.length) throw Object.assign(new Error('The member file does not contain any data rows.'),{statusCode:400,code:'EMPTY_MEMBER_IMPORT'});
+
+  const [members,services,ministries]=await Promise.all([
+    listDocs(tableNames.members,churchId,{max:10000}),
+    listDocs(tableNames.services,churchId,{max:2000}),
+    listDocs(tableNames.ministries,churchId,{max:2000})
+  ]);
+
+  const byEmail=new Map(members.filter(m=>m.email).map(m=>[norm(m.email),m]));
+  const byName=new Map(members.map(m=>[norm(m.fullName),m]));
+  const servicesByNorm=new Map();
+  for(const service of services)for(const label of [service.label,service.labelEn,service.labelEs])if(label)servicesByNorm.set(norm(label),service);
+  const ministriesByNorm=new Map();
+  for(const ministry of ministries)for(const label of [ministry.label,ministry.labelEn,ministry.labelEs])if(label)ministriesByNorm.set(norm(label),ministry);
+
+  const firstRow=rows[0]||{};
+  const headers=Object.keys(firstRow);
+  const assignmentHeaders=headers.map(header=>({header,parsed:splitAssignmentHeader(header)})).filter(x=>x.parsed);
+  const hasSnapshotColumns=['Ministries','Services','AssignmentEligibility'].every(name=>hasColumn(firstRow,[name]));
+  const snapshotMode=hasSnapshotColumns&&hasColumn(firstRow,['AssignmentEligibilityMode','Assignment Eligibility Mode']);
+  const adminColumnPresent=hasColumn(firstRow,['Admin','Administrator','Administrador','Admin Access']);
+  const ownerColumnPresent=hasColumn(firstRow,['ChurchAdministrator','Church Administrator']);
+
+  // Ownership is intentionally NOT transferable by spreadsheet. A roster may preserve the
+  // existing owner marker, but cannot create a second Church Administrator or transfer ownership.
+  // Validate this before any import writes so a malformed file cannot partially mutate the church.
+  if(ownerColumnPresent){
+    for(const row of rows){
+      const requestedOwner=truthy(findValue(row,['ChurchAdministrator','Church Administrator']));
+      if(!requestedOwner)continue;
+      let fullName=findValue(row,['Full Name','Name','Nombre Completo','Nombre']);
+      const first=findValue(row,['First Name','First Name / Nombre','Nombre']);
+      const last=findValue(row,['Last Name','Last Name / Apellido','Apellido']);
+      if(!fullName)fullName=`${first} ${last}`.trim();
+      const email=findValue(row,['Email','Correo']);
+      const existing=(email&&byEmail.get(norm(email)))||byName.get(norm(fullName));
+      if(!existing?.churchAdministrator){
+        throw Object.assign(new Error(`ChurchAdministrator cannot be assigned by roster import (${fullName||'unknown member'}). Preserve the existing Church Administrator or use the ownership-transfer workflow.`),{statusCode:409,code:'OWNER_IMPORT_FORBIDDEN'});
+      }
+    }
+  }
+
+  const defs=new Map();
+  let servicesCreated=0,assignmentsCreated=0,ministriesCreated=0;
+  for(const {header,parsed} of assignmentHeaders){
+    const beforeService=servicesByNorm.has(norm(parsed.serviceName));
+    const service=await ensureService(churchId,parsed.serviceName,servicesByNorm);
+    if(!beforeService)servicesCreated++;
+    const role=roleBase(parsed.assignmentName);
+    const beforeMinistry=ministriesByNorm.has(norm(role.labelEn))||ministriesByNorm.has(norm(role.labelEs));
+    const ministry=await ensureMinistry(churchId,parsed.assignmentName,ministriesByNorm);
+    if(!beforeMinistry)ministriesCreated++;
+    const definition=await ensureAssignmentDefinition(churchId,service,parsed.assignmentName,ministry);
+    if(definition.created)assignmentsCreated++;
+    defs.set(header,{service,ministry,item:definition.item});
+  }
+
+  let membersCreated=0,membersUpdated=0,skipped=0,eligibilityLinks=0;
+  let adminAccessGranted=0,adminAccessRevoked=0;
+  const accountEntries=[];
+
+  for(const row of rows){
+    let fullName=findValue(row,['Full Name','Name','Nombre Completo','Nombre']);
+    const first=findValue(row,['First Name','First Name / Nombre','Nombre']);
+    const last=findValue(row,['Last Name','Last Name / Apellido','Apellido']);
+    if(!fullName)fullName=`${first} ${last}`.trim();
+    const email=findValue(row,['Email','Correo']);
+    const phone=findValue(row,['Phone','Telefono','Teléfono']);
+    const username=findValue(row,['Username','Usuario']).toLowerCase();
+    const activeRaw=findValue(row,['Active','Activo']);
+    if(!fullName){skipped++;continue;}
+
+    let member=(email&&byEmail.get(norm(email)))||byName.get(norm(fullName));
+    const isNew=!member;
+    member=member?{...member}:{
+      id:`m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`,
+      fullName,username,email,phone,active:true,groups:['members','worship'],ministries:[],serviceAvailability:[],
+      unavailability:[],assignmentEligibility:[],assignmentEligibilityMode:'explicit',adminAccess:false,churchAdministrator:false,createdAt:nowIso()
+    };
+
+    const previousAdmin=member.adminAccess===true;
+    member.fullName=fullName;
+    member.email=email||member.email||'';
+    member.phone=phone||member.phone||'';
+    member.username=username||member.username||'';
+    if(activeRaw)member.active=!FALSEY.has(norm(activeRaw));
+    member.groups=Array.from(new Set([...(member.groups||[]),'members','worship']));
+    member.ministries=Array.from(new Set(member.ministries||[]));
+    member.serviceAvailability=Array.from(new Set(member.serviceAvailability||[]));
+    member.assignmentEligibility=Array.from(new Set(member.assignmentEligibility||[]));
+    member.assignmentEligibilityMode='explicit';
+
+    if(adminColumnPresent){
+      const requestedAdmin=truthy(findValue(row,['Admin','Administrator','Administrador','Admin Access']));
+      // The Church Administrator necessarily retains admin access even if the row says No.
+      member.adminAccess=member.churchAdministrator===true?true:requestedAdmin;
+      if(!previousAdmin&&member.adminAccess)adminAccessGranted++;
+      if(previousAdmin&&!member.adminAccess)adminAccessRevoked++;
+    }
+
+    if(snapshotMode&&norm(findValue(row,['AssignmentEligibilityMode','Assignment Eligibility Mode']))==='explicit'){
+      const requestedMinistries=splitList(findValue(row,['Ministries','Ministerios']));
+      const requestedServices=splitList(findValue(row,['Services','Servicios']));
+      const requestedEligibility=splitList(findValue(row,['AssignmentEligibility','Assignment Eligibility']));
       member.ministries=requestedMinistries.map(label=>ministriesByNorm.get(norm(label))?.id).filter(Boolean);
       member.serviceAvailability=requestedServices.map(label=>servicesByNorm.get(norm(label))?.id).filter(Boolean);
       member.assignmentEligibility=requestedEligibility.filter(token=>/^svc_[a-z0-9_]+::[a-z0-9_]+$/i.test(token));
       member.assignmentEligibilityMode='explicit';
       eligibilityLinks+=member.assignmentEligibility.length;
     }else{
-      for(const {header} of assignmentHeaders){if(!truthy(row[header]))continue;const d=defs.get(header);if(!d)continue;if(!member.ministries.includes(d.ministry.id))member.ministries.push(d.ministry.id);if(!member.serviceAvailability.includes(d.service.id))member.serviceAvailability.push(d.service.id);for(const key of d.item.assignmentKeys||[]){const token=`${d.service.id}::${key}`;if(!member.assignmentEligibility.includes(token)){member.assignmentEligibility.push(token);eligibilityLinks++;}}}
+      for(const {header} of assignmentHeaders){
+        if(!truthy(row[header]))continue;
+        const definition=defs.get(header);if(!definition)continue;
+        if(!member.ministries.includes(definition.ministry.id))member.ministries.push(definition.ministry.id);
+        if(!member.serviceAvailability.includes(definition.service.id))member.serviceAvailability.push(definition.service.id);
+        for(const key of definition.item.assignmentKeys||[]){
+          const token=`${definition.service.id}::${key}`;
+          if(!member.assignmentEligibility.includes(token)){member.assignmentEligibility.push(token);eligibilityLinks++;}
+        }
+      }
     }
-    member.updatedAt=nowIso();await putDoc(tableNames.members,churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
-    accountEntries.push({member,firstName:first,lastName:last});
-    if(isNew){membersCreated++;if(email)byEmail.set(norm(email),member);byName.set(norm(fullName),member);}else membersUpdated++;
-  }
-  // Batch account provisioning loads the account namespace once, avoiding N× full-table reads.
-  const provisioned=await provisionAccountsBatch(churchId,accountEntries,{initialPassword:'welcome'});accountsCreated=provisioned.created;
-  return {membersCreated,membersUpdated,accountsCreated,accountsPreserved:provisioned.preserved,initialPassword:accountsCreated?'welcome':undefined,skipped,servicesCreated,ministriesCreated,assignmentsCreated,eligibilityLinks,totalRows:rows.length,assignmentColumns:assignmentHeaders.length,authoritativeSnapshot:snapshotMode,servicesNeedingScheduleReview:[...servicesByNorm.values()].filter(s=>s.source==='bulk_import'&&s.scheduleNeedsReview).map(s=>s.label)};
-}
 
+    member.updatedAt=nowIso();
+    await putDoc(tableNames.members,churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
+    accountEntries.push({member,firstName:first,lastName:last});
+    if(isNew){
+      membersCreated++;
+      if(email)byEmail.set(norm(email),member);
+      byName.set(norm(fullName),member);
+    }else membersUpdated++;
+  }
+
+  // Batch account provisioning creates deterministic usernames for members without accounts.
+  // Existing accounts are never re-created or have their password replaced.
+  const provisioned=await provisionAccountsBatch(churchId,accountEntries,{initialPassword:'welcome'});
+  const accountsCreated=provisioned.created;
+
+  // Synchronize imported administrative capability to existing user records as well as member
+  // profiles. Role changes invalidate existing sessions so the new authorization state is applied
+  // immediately at the next sign-in. Password hashes are never touched here.
+  let accountRoleSyncs=0,sessionsRevoked=0;
+  for(const result of provisioned.results||[]){
+    const member=result.member,user=result.user;
+    if(!user||!result.username)continue;
+    const desiredAdmin=member.adminAccess===true;
+    const desiredOwner=member.churchAdministrator===true;
+    const desiredActive=member.active!==false;
+    const desiredGroups=member.groups||user.groups||[];
+    const roleChanged=user.adminAccess!==desiredAdmin||user.churchAdministrator!==desiredOwner||user.active!==desiredActive||JSON.stringify(user.groups||[])!==JSON.stringify(desiredGroups);
+    if(!roleChanged)continue;
+    const nextUser={...user,adminAccess:desiredAdmin,churchAdministrator:desiredOwner,active:desiredActive,groups:desiredGroups,updatedAt:nowIso()};
+    await putDoc(tableNames.users,churchId,result.username,nextUser,{memberId:member.id,active:desiredActive,adminAccess:desiredAdmin,churchAdministrator:desiredOwner});
+    accountRoleSyncs++;
+    if(result.created===false){await destroyAllUserSessions(churchId,result.username);sessionsRevoked++;}
+  }
+
+  return {
+    membersCreated,membersUpdated,accountsCreated,accountsPreserved:provisioned.preserved,
+    initialPassword:accountsCreated?'welcome':undefined,skipped,servicesCreated,ministriesCreated,assignmentsCreated,eligibilityLinks,
+    adminColumnApplied:adminColumnPresent,adminAccessGranted,adminAccessRevoked,accountRoleSyncs,sessionsRevoked,
+    totalRows:rows.length,assignmentColumns:assignmentHeaders.length,authoritativeSnapshot:snapshotMode,
+    servicesNeedingScheduleReview:[...servicesByNorm.values()].filter(s=>s.source==='bulk_import'&&s.scheduleNeedsReview).map(s=>s.label)
+  };
+}

@@ -1,6 +1,12 @@
-# Westbury Church Hub V5.1.0
+# Westbury Church Hub V5.2.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
+
+## V5.2 roster import reliability
+
+V5.2 fixes the roster-processing regression that produced `findValue is not defined`, adds normalized spreadsheet header lookup, and makes the `Admin` column authoritative for administrator access during owner-only roster import. Existing account passwords are preserved and the current Church Administrator cannot be transferred by spreadsheet.
+
+The final Westbury roster is included at `imports/Westbury-Members-Final-Upload.xlsx`. See `docs/ROSTER-IMPORT-V5.2.md`.
 
 ## V5.0 major change
 
@@ -17,7 +23,7 @@ Key properties:
 - all writes remain permission-gated, module-gated and confirmation-controlled
 - legacy resolver retained only as a compatibility fallback
 
-See `RELEASE-NOTES-V5.1.0.md`, `docs/DCE-V5.0.md`, and `docs/V5.0-UPGRADE.md`.
+See `RELEASE-NOTES-V5.2.0.md`, `docs/DCE-V5.0.md`, and `docs/V5.2-UPGRADE.md`.
 
 # Church Hub V2.4
 

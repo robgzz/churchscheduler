@@ -11,5 +11,5 @@
   }
   window.addEventListener('error',function(e){if(e&&e.error)showFailure(e.error);});
   window.addEventListener('unhandledrejection',function(e){showFailure(e.reason);});
-  import('/assets/admin.js?v=510').catch(showFailure);
+  import('/assets/admin.js?v=520').catch(showFailure);
 })();

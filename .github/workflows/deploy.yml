@@ -1,4 +1,4 @@
-name: Deploy Westbury Church Hub V5.1.0
+name: Deploy Westbury Church Hub V5.2.0
 
 on:
   push:

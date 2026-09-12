@@ -12,9 +12,9 @@ test('V4.5 Chat Hub People action crosses into the admin shell',()=>{
 
 test('V4.5 admin page has a resilient non-module bootstrap loader',()=>{
   const html=read('public/admin/index.html'),loader=read('public/assets/admin-loader.js');
-  assert.match(html,/admin-loader\.js\?v=(?:4(?:5|6)0|5(?:00|10))/);
+  assert.match(html,/admin-loader\.js\?v=(?:4(?:5|6)0|5(?:00|10|20))/);
   assert.match(html,/Cargando administración/);
-  assert.match(loader,/import\('\/assets\/admin\.js\?v=(?:4(?:5|6)0|5(?:00|10))'\)\.catch/);
+  assert.match(loader,/import\('\/assets\/admin\.js\?v=(?:4(?:5|6)0|5(?:00|10|20))'\)\.catch/);
   assert.match(loader,/unhandledrejection/);
 });
 
