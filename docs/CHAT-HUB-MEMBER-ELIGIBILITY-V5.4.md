@@ -1,4 +1,4 @@
-# Chat Hub — Member Ministry Eligibility (V5.4)
+# Chat Hub — Member Ministry Eligibility (V5.5)
 
 Administrators can query and change a member's ministry eligibility directly in Chat Hub.
 

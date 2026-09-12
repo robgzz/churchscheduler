@@ -7,6 +7,10 @@ export const intentCatalog=Object.freeze([
     'ayuda','que puedes hacer','como me ayudas','que sabes hacer','que te puedo preguntar','comandos','opciones',
     'help','what can you do','how can you help','what can i ask','commands','options','help me'
   ]),
+  I('procedure.help','read.self',true,['como hago','como puedo','ayudame con','explica como','how do i','how can i','help me with','explain how'],['help','procedure']),
+  I('songs.select','write.self',false,['escoger cantos','elige cantos','elegir cantos','seleccionar cantos','pon estos cantos','poner cantos','choose songs','select songs','pick songs','set my songs'],['songs','select']),
+  I('admin.programAdminSet','admin',false,['pon administrador responsable','cambia administrador responsable','marca admin responsable','asigna administrador responsable','set program admin','change responsible admin','assign program admin'],['program','admin','responsible']),
+  I('diagnostic.why','read.self',true,['por que','porque no','que falta','why','why not','what is missing'],['why']),
   I('navigation.open','read.self',true,[
     'abre inicio','abre el programa','abre iglesia','abre noticias','abre eventos','abre mis tareas','abre peticiones','abre mi perfil','abre cuidado de ninos','abre chat hub',
     'llevame al programa','llevame a eventos','llevame a tareas','llevame a peticiones','ve a iglesia','ve a mi perfil',

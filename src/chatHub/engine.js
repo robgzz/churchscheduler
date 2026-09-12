@@ -12,6 +12,7 @@ import { planFrame } from '../dce/queryPlanner.js';
 import { authorize, isAdmin, isOwner } from './policy.js';
 import { getChatState, saveChatState } from './session.js';
 import { executeIntent } from './handlers.js';
+import { assistancePlan } from './assistancePlanner.js';
 
 // Module and risk metadata live in capabilityRegistry.js; execution remains service-driven.
 
@@ -36,15 +37,19 @@ async function logUnknown(req,normalized,highlights){
 export async function processChat(req,{message='',attachment=null,action='',screenContext={}}={}){
   const state=await getChatState(req.churchId,req.identity);state.context={...(state.context||{}),screenContext:screenContext||{}};
   const normalized=normalizeInput(message||'');
+  const actor={isAdmin:isAdmin(req.identity),isOwner:isOwner(req.identity),memberId:req.identity?.member?.id||''};
+  const assist=!action&&!state.pending?assistancePlan(normalized.normalized,state,actor):null;
+  if(assist?.procedureId)state.context.procedureHint={id:assist.procedureId,kind:assist.kind,at:nowIso()};
   let resolution={id:state.lastIntent||'unknown',confidence:1,ambiguous:false,item:byId.get(state.lastIntent)};
   let frame=state.context?.lastFrame||null;
   if(!action && !state.pending){
-    const actor={isAdmin:isAdmin(req.identity),isOwner:isOwner(req.identity),memberId:req.identity?.member?.id||''};
     frame=compileDeterministic({normalized,domainPack:churchHubDomainPack,context:state.context||{},actor});
     const legacy=resolveIntent(normalized,{isAdmin:actor.isAdmin,lastIntent:state.lastIntent});
     // DCE owns the turn when it has a coherent frame. The legacy resolver remains a
     // compatibility fallback while old phrase packs are retired gradually.
-    if(frame.intent!=='unknown'&&frame.confidence>=0.72){
+    if(assist&&assist.score>=0.8){
+      resolution={id:assist.intent,score:Math.round(assist.score*120),confidence:assist.score,ambiguous:false,item:byId.get(assist.intent),frame,second:null,assist};
+    }else if(frame.intent!=='unknown'&&frame.confidence>=0.72){
       resolution={id:frame.intent,score:Math.round(frame.confidence*120),confidence:frame.confidence,ambiguous:frame.ambiguities.length>0,item:byId.get(frame.intent),frame,second:legacy.second};
     }else resolution={...legacy,frame};
   }
