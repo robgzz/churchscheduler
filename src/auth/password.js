@@ -4,12 +4,22 @@ import { promisify } from 'node:util';
 const scrypt = promisify(crypto.scrypt);
 const KEYLEN = 64;
 
-export async function hashPassword(password){
-  if (String(password || '').length < 10) throw new Error('Password must be at least 10 characters.');
+async function hashCore(password){
   const salt = crypto.randomBytes(16).toString('hex');
   const key = await scrypt(String(password), salt, KEYLEN, { N: 16384, r: 8, p: 1 });
   return { scheme:'scrypt-v1', salt, hash:Buffer.from(key).toString('hex') };
 }
+export async function hashPassword(password){
+  if (String(password || '').length < 10) throw new Error('Password must be at least 10 characters.');
+  return hashCore(password);
+}
+// Initial roster/access-request password only. It is intentionally simple because
+// the account is marked mustChangePassword and the member must choose a 10+ character password.
+export async function hashInitialPassword(password='welcome'){
+  if(!String(password||'')) throw new Error('Initial password is required.');
+  return hashCore(password);
+}
+
 
 export async function verifyPassword(password, record){
   if (!record?.salt || !record?.hash || record.scheme !== 'scrypt-v1') return false;

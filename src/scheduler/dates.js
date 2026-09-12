@@ -17,9 +17,16 @@ export function startOfWeek(iso, weekStartsOn=0){
   const diff=(weekday(iso)-weekStartsOn+7)%7;
   return addDays(iso,-diff);
 }
-export function threeWeekWindow(timeZone, weekStartsOn=0){
-  const today=todayIso(timeZone); const start=startOfWeek(today,weekStartsOn); return { start, end:addDays(start,20), today };
+export function threeWeekWindow(timeZone, weekStartsOn=0, now=new Date()){
+  const parts=datePartsInZone(now,timeZone);
+  const today=`${parts.year}-${parts.month}-${parts.day}`;
+  // Keep the current Sunday visible through 6:59 PM local time. At 7:00 PM
+  // the rolling three-week view advances so the next Sunday becomes week one.
+  const sundayRollover=weekday(today)===0 && Number(parts.hour)>=19;
+  const start=sundayRollover?addDays(today,1):today;
+  return {start,end:addDays(start,20),today,rolledAfterSundayService:sundayRollover};
 }
+
 export function daysBetween(fromIso, toIso){
   if (!fromIso) return 9999;
   return Math.max(0, Math.floor((Date.parse(`${toIso}T12:00:00Z`)-Date.parse(`${fromIso.slice(0,10)}T12:00:00Z`))/86400000));

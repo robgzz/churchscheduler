@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { tableNames } from '../config.js';
 import { getDoc, listDocs, putDoc, nowIso } from '../storage/repository.js';
 import { parseCsv, parseXlsx, parseSpreadsheetXml, splitAssignmentHeader, inferServiceSchedule, songTemplateRows, memberTemplateRows, norm } from './importFormats.js';
+import { provisionAccountsBatch } from './accountProvisioning.js';
 export { parseCsv, parseXlsx, parseSpreadsheetXml, splitAssignmentHeader, inferServiceSchedule, songTemplateRows, memberTemplateRows } from './importFormats.js';
 
 const safe=v=>v==null?'':String(v);
@@ -76,7 +77,7 @@ export async function importMembersAndAssignments(churchId,rows){
   const snapshotMode=hasSnapshotColumns&&headers.includes('AssignmentEligibilityMode');
   const defs=new Map();let servicesCreated=0,assignmentsCreated=0,ministriesCreated=0;
   for(const {header,parsed} of assignmentHeaders){const beforeService=servicesByNorm.has(norm(parsed.serviceName));const service=await ensureService(churchId,parsed.serviceName,servicesByNorm);if(!beforeService)servicesCreated++;const role=roleBase(parsed.assignmentName);const beforeMin=ministriesByNorm.has(norm(role.labelEn))||ministriesByNorm.has(norm(role.labelEs));const ministry=await ensureMinistry(churchId,parsed.assignmentName,ministriesByNorm);if(!beforeMin)ministriesCreated++;const def=await ensureAssignmentDefinition(churchId,service,parsed.assignmentName,ministry);if(def.created)assignmentsCreated++;defs.set(header,{service,ministry,item:def.item});}
-  let membersCreated=0,membersUpdated=0,skipped=0,eligibilityLinks=0;
+  let membersCreated=0,membersUpdated=0,skipped=0,eligibilityLinks=0,accountsCreated=0;const accountEntries=[];
   for(const row of rows){let fullName=findValue(row,['Full Name','Name','Nombre Completo','Nombre']);const first=findValue(row,['First Name','First Name / Nombre','Nombre']);const last=findValue(row,['Last Name','Last Name / Apellido','Apellido']);if(!fullName)fullName=`${first} ${last}`.trim();const email=findValue(row,['Email','Correo']);const phone=findValue(row,['Phone','Telefono','Teléfono']);const username=findValue(row,['Username','Usuario']).toLowerCase();const activeRaw=findValue(row,['Active','Activo']);if(!fullName){skipped++;continue;}let member=(email&&byEmail.get(norm(email)))||byName.get(norm(fullName));const isNew=!member;member=member?{...member}:{id:`m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`,fullName,username,email,phone,active:true,groups:['members','worship'],ministries:[],serviceAvailability:[],unavailability:[],assignmentEligibility:[],assignmentEligibilityMode:'explicit',createdAt:nowIso()};member.fullName=fullName;member.email=email||member.email||'';member.phone=phone||member.phone||'';member.username=username||member.username||'';if(activeRaw)member.active=!FALSEY.has(norm(activeRaw));member.groups=Array.from(new Set([...(member.groups||[]),'members','worship']));member.ministries=Array.from(new Set(member.ministries||[]));member.serviceAvailability=Array.from(new Set(member.serviceAvailability||[]));member.assignmentEligibility=Array.from(new Set(member.assignmentEligibility||[]));member.assignmentEligibilityMode='explicit';
     if(snapshotMode&&norm(row.AssignmentEligibilityMode)==='explicit'){
       const requestedMinistries=splitList(row.Ministries);
@@ -90,8 +91,12 @@ export async function importMembersAndAssignments(churchId,rows){
     }else{
       for(const {header} of assignmentHeaders){if(!truthy(row[header]))continue;const d=defs.get(header);if(!d)continue;if(!member.ministries.includes(d.ministry.id))member.ministries.push(d.ministry.id);if(!member.serviceAvailability.includes(d.service.id))member.serviceAvailability.push(d.service.id);for(const key of d.item.assignmentKeys||[]){const token=`${d.service.id}::${key}`;if(!member.assignmentEligibility.includes(token)){member.assignmentEligibility.push(token);eligibilityLinks++;}}}
     }
-    member.updatedAt=nowIso();await putDoc(tableNames.members,churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});if(isNew){membersCreated++;if(email)byEmail.set(norm(email),member);byName.set(norm(fullName),member);}else membersUpdated++;
+    member.updatedAt=nowIso();await putDoc(tableNames.members,churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
+    accountEntries.push({member,firstName:first,lastName:last});
+    if(isNew){membersCreated++;if(email)byEmail.set(norm(email),member);byName.set(norm(fullName),member);}else membersUpdated++;
   }
-  return {membersCreated,membersUpdated,skipped,servicesCreated,ministriesCreated,assignmentsCreated,eligibilityLinks,totalRows:rows.length,assignmentColumns:assignmentHeaders.length,authoritativeSnapshot:snapshotMode,servicesNeedingScheduleReview:[...servicesByNorm.values()].filter(s=>s.source==='bulk_import'&&s.scheduleNeedsReview).map(s=>s.label)};
+  // Batch account provisioning loads the account namespace once, avoiding N× full-table reads.
+  const provisioned=await provisionAccountsBatch(churchId,accountEntries,{initialPassword:'welcome'});accountsCreated=provisioned.created;
+  return {membersCreated,membersUpdated,accountsCreated,accountsPreserved:provisioned.preserved,initialPassword:accountsCreated?'welcome':undefined,skipped,servicesCreated,ministriesCreated,assignmentsCreated,eligibilityLinks,totalRows:rows.length,assignmentColumns:assignmentHeaders.length,authoritativeSnapshot:snapshotMode,servicesNeedingScheduleReview:[...servicesByNorm.values()].filter(s=>s.source==='bulk_import'&&s.scheduleNeedsReview).map(s=>s.label)};
 }
 

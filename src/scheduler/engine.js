@@ -57,7 +57,7 @@ export async function generateThreeWeekSchedule(churchId,{source='manual'}={}){
   for (const service of services.filter(s=>s.active!==false)){
     const template=templateMap.get(service.templateId);
     if (!template) continue;
-    for (const dateISO of occurrenceDates(service,window.today,window.end)){
+    for (const dateISO of occurrenceDates(service,window.start,window.end)){
       const pid=programId(service.id,dateISO);
       let program=await getDoc(tableNames.programs,churchId,pid);
       if (program?.locked===true){ results.push(program); continue; }

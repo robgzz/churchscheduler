@@ -12,15 +12,15 @@ test('V4.5 Chat Hub People action crosses into the admin shell',()=>{
 
 test('V4.5 admin page has a resilient non-module bootstrap loader',()=>{
   const html=read('public/admin/index.html'),loader=read('public/assets/admin-loader.js');
-  assert.match(html,/admin-loader\.js\?v=(?:4(?:5|6)0|500)/);
+  assert.match(html,/admin-loader\.js\?v=(?:4(?:5|6)0|5(?:00|10))/);
   assert.match(html,/Cargando administración/);
-  assert.match(loader,/import\('\/assets\/admin\.js\?v=(?:4(?:5|6)0|500)'\)\.catch/);
+  assert.match(loader,/import\('\/assets\/admin\.js\?v=(?:4(?:5|6)0|5(?:00|10))'\)\.catch/);
   assert.match(loader,/unhandledrejection/);
 });
 
 test('V4.5 password minimum is 10 and generated password is simplified',()=>{
   for(const f of ['src/routes/auth.js','src/routes/admin.js','src/routes/setup.js'])assert.doesNotMatch(read(f),/length<12/);
-  assert.match(read('src/chatHub/handlers.js'),/const words=\['Luna','Casa','Vida','Roca','Amor'\]/);
+  assert.match(read('src/chatHub/handlers.js'),/(?:const words=\['Luna','Casa','Vida','Roca','Amor'\]|initialPassword:'welcome')/);
   assert.match(read('public/assets/app.js'),/minlength="10"/);
 });
 

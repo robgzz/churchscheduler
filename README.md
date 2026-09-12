@@ -1,4 +1,4 @@
-# Westbury Church Hub V5.0.0
+# Westbury Church Hub V5.1.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
 
@@ -17,7 +17,7 @@ Key properties:
 - all writes remain permission-gated, module-gated and confirmation-controlled
 - legacy resolver retained only as a compatibility fallback
 
-See `RELEASE-NOTES-V5.0.0.md`, `docs/DCE-V5.0.md`, and `docs/V5.0-UPGRADE.md`.
+See `RELEASE-NOTES-V5.1.0.md`, `docs/DCE-V5.0.md`, and `docs/V5.0-UPGRADE.md`.
 
 # Church Hub V2.4
 

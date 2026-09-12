@@ -4,6 +4,7 @@ import { requireAdmin } from '../auth/middleware.js';
 import { tableNames, config } from '../config.js';
 import { listDocs, getDoc, putDoc, deleteDoc, uploadBuffer, nowIso } from '../storage/repository.js';
 import { hashPassword } from '../auth/password.js';
+import { provisionMemberAccount, emailInitialCredentials } from '../services/accountProvisioning.js';
 import { destroyAllUserSessions } from '../auth/sessions.js';
 import { securityEvent } from '../security/audit.js';
 import { generateThreeWeekSchedule, pickReplacement } from '../scheduler/engine.js';
@@ -107,17 +108,17 @@ adminRouter.post('/member-access/:id/approve',async(req,res,next)=>{try{
   const all=await listDocs(tableNames.members,req.churchId,{max:10000});
   const email=String(request.email||'').trim().toLowerCase(),phone=String(request.phone||'').replace(/\D/g,'');
   let member=all.find(m=>(email&&String(m.email||'').trim().toLowerCase()===email)||(phone&&String(m.phone||'').replace(/\D/g,'')===phone));
-  if(member){
-    member={...member,email:member.email||request.email||'',phone:member.phone||request.phone||'',updatedAt:nowIso()};
-  }else{
-    const id=`m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-    member={id,fullName:String(request.fullName||`${request.firstName||''} ${request.lastName||''}`).trim(),username:'',email:String(request.email||'').trim(),phone:String(request.phone||'').trim(),active:true,groups:['members'],ministries:[],serviceAvailability:[],assignmentEligibility:[],unavailability:[],allowSameDayMultipleServices:false,adminAccess:false,churchAdministrator:false,notificationPreferences:{sms:true,email:true,push:true},childrenProgramEnabled:false,childrenNotificationPreferences:{sms:true,email:true,push:true},childrenWorkerRoles:[],createdAt:nowIso()};
-  }
+  if(member){member={...member,email:member.email||request.email||'',phone:member.phone||request.phone||'',updatedAt:nowIso()};}
+  else{const id=`m_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;member={id,fullName:String(request.fullName||`${request.firstName||''} ${request.lastName||''}`).trim(),username:'',email:String(request.email||'').trim(),phone:String(request.phone||'').trim(),active:true,groups:['members'],ministries:[],serviceAvailability:[],assignmentEligibility:[],unavailability:[],allowSameDayMultipleServices:false,adminAccess:false,churchAdministrator:false,notificationPreferences:{sms:true,email:true,push:true},childrenProgramEnabled:false,childrenNotificationPreferences:{sms:true,email:true,push:true},childrenWorkerRoles:[],createdAt:nowIso()};}
   await putDoc(tableNames.members,req.churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:false,churchAdministrator:false});
-  request.status='approved';request.memberId=member.id;request.reviewedAt=nowIso();request.reviewedBy=req.identity?.member?.id||req.identity?.user?.memberId||'';
+  const account=await provisionMemberAccount(req.churchId,member,{firstName:request.firstName,lastName:request.lastName,initialPassword:'welcome'});
+  member=account.member;
+  const church=await getDoc(tableNames.settings,req.churchId,'church')||{};
+  const emailResult=await emailInitialCredentials(req.churchId,member,{username:account.username,password:'welcome',churchName:church.churchNameEn||church.churchName||'Westbury Church of Christ'});
+  request.status='approved';request.memberId=member.id;request.username=account.username;request.credentialsEmailSent=emailResult.sent===true;request.reviewedAt=nowIso();request.reviewedBy=req.identity?.member?.id||req.identity?.user?.memberId||'';
   await putDoc(tableNames.visitorContacts,req.churchId,request.id,request,{status:'approved',createdAt:request.createdAt||''});
-  await appendHistory(req.churchId,{eventType:'member_access.approved',memberId:member.id,source:'admin',details:{requestId:request.id,reviewedBy:request.reviewedBy,fullName:member.fullName}});
-  res.json({ok:true,member});
+  await appendHistory(req.churchId,{eventType:'member_access.approved',memberId:member.id,source:'admin',details:{requestId:request.id,reviewedBy:request.reviewedBy,fullName:member.fullName,username:account.username,accountCreated:account.created,emailSent:emailResult.sent===true}});
+  res.json({ok:true,member,username:account.username,accountCreated:account.created,emailSent:emailResult.sent===true,emailError:emailResult.sent?null:emailResult.reason});
 }catch(e){next(e);}});
 adminRouter.post('/member-access/:id/reject',async(req,res,next)=>{try{
   const request=await getDoc(tableNames.visitorContacts,req.churchId,req.params.id);
