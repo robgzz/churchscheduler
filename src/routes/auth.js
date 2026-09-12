@@ -26,7 +26,7 @@ authRouter.post('/change-password',requireLogin,async(req,res)=>{
   const next=String(req.body.newPassword||'');
   const user=await getDoc(tableNames.users,req.churchId,req.identity.user.username);
   if(!user || !await verifyPassword(current,user.password)) return res.status(400).json({error:'Current password is incorrect.'});
-  if(next.length<12) return res.status(400).json({error:'New password must be at least 12 characters.'});
+  if(next.length<10) return res.status(400).json({error:'New password must be at least 10 characters.'});
   user.password=await hashPassword(next);
   user.mustChangePassword=false;
   user.passwordChangedAt=nowIso();

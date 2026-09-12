@@ -48,8 +48,8 @@ app.use('/api',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next(
 app.use(sameOriginWrite);
 app.use(attachIdentity);
 app.use(requireCsrf);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'4.4.0'}));
-app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:'4.4.0'});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable'});}});
+app.get('/healthz',(req,res)=>res.json({ok:true,version:'4.5.0'}));
+app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:'4.5.0'});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable'});}});
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);
@@ -82,4 +82,4 @@ app.use((err,req,res,next)=>{
 
 await ensureStorage();
 await seedIfNeeded(config.churchId);
-app.listen(config.port,()=>console.log(`Westbury Church Hub V4.4.0 listening on ${config.port}`));
+app.listen(config.port,()=>console.log(`Westbury Church Hub V4.5.0 listening on ${config.port}`));

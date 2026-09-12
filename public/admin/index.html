@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f7f3ec" id="theme-color">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Westbury Church Hub Admin</title>
-  <link rel="stylesheet" href="/assets/styles.css?v=440">
+  <link rel="stylesheet" href="/assets/styles.css?v=450">
 </head>
 <body>
   <div class="app-shell admin-shell">
@@ -21,11 +21,11 @@
         <button class="icon-btn compact" id="admin-theme-btn" aria-label="Theme">◐</button>
       </div>
     </header>
-    <main id="admin-main" class="main"></main>
+    <main id="admin-main" class="main"><div class="card empty" id="admin-bootstrap-status">Cargando administración…</div></main>
     <nav id="admin-nav" class="bottom-nav"></nav>
   </div>
   <div id="modal-root"></div>
   <div id="toast" class="toast hidden"></div>
-  <script type="module" src="/assets/admin.js?v=440"></script>
+  <script src="/assets/admin-loader.js?v=450" defer></script>
 </body>
 </html>

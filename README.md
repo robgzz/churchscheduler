@@ -1,4 +1,4 @@
-# Westbury Church Hub V4.4.0
+# Westbury Church Hub V4.5.0
 
 ## V4.4 highlights
 
@@ -10,7 +10,7 @@
 - Chat Hub uses a broader bilingual/Spanglish deterministic grammar layer in addition to phrase matching, context, typo normalization, permissions, module checks and confirmation workflows.
 - Security/performance review retained CSP/Helmet, same-origin + CSRF write protection, opaque sessions, per-user Chat Hub rate limiting, private Azure storage patterns, compression, server-side module enforcement, health/readiness checks, and Container Apps autoscaling.
 
-See `RELEASE-NOTES-V4.4.0.md`, `docs/V4.4-UPGRADE.md`, and `docs/CHAT-HUB-V4.4.md`.
+See `RELEASE-NOTES-V4.5.0.md`, `docs/V4.4-UPGRADE.md`, and `docs/CHAT-HUB-V4.4.md`.
 
 **Westbury-only edition — by Exonuvia.** This package is intentionally dedicated to Westbury Church of Christ and runs as a single-church deployment.
 

@@ -1,7 +1,9 @@
-import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js?v=440';
+import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js?v=450';
 
 const $=(s,r=document)=>r.querySelector(s), main=$('#admin-main'), nav=$('#admin-nav'), title=$('#admin-title');
-const state={me:null,bootstrap:null,tab:'home',people:null,services:null,churchProfile:null,contentTab:'news',songs:null,csrf:null};
+const requestedTab=new URLSearchParams(window.location.search).get('tab');
+const allowedTabs=new Set(['home','people','schedule','content','settings']);
+const state={me:null,bootstrap:null,tab:allowedTabs.has(requestedTab)?requestedTab:'home',people:null,services:null,churchProfile:null,contentTab:'news',songs:null,csrf:null};
 const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const l=(en,es)=>locale()==='en'?en:es;
 const fmtDate=iso=>new Intl.DateTimeFormat(dateLocale(),{weekday:'short',month:'short',day:'numeric',year:'numeric'}).format(new Date(`${iso}T12:00:00`));
@@ -38,7 +40,7 @@ async function init(){
     applyBranding();
     bindHeaderControls();
     renderNav();
-    await home();
+    await render();
   }catch(err){
     console.error('Admin portal initialization failed',err);
     nav.innerHTML='';

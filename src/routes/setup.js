@@ -22,7 +22,7 @@ setupRouter.post('/owner',setupLimiter,async(req,res)=>{
   if(!config.bootstrapCode || !safeEqual(req.body.bootstrapCode,config.bootstrapCode)) return res.status(403).json({error:'Invalid bootstrap code.'});
   const username=String(req.body.username || config.initialOwnerUsername).trim().toLowerCase();
   const password=String(req.body.password || '');
-  if(password.length<12) return res.status(400).json({error:'Password must be at least 12 characters.'});
+  if(password.length<10) return res.status(400).json({error:'Password must be at least 10 characters.'});
   const members=await listDocs(tableNames.members,req.churchId);
   let member=members.find(m=>String(m.username||'').toLowerCase()===username);
   if(!member){

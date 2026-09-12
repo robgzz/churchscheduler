@@ -149,7 +149,7 @@ adminRouter.post('/people/:id/provision-account',async(req,res)=>{
   if(member.churchAdministrator===true && !requesterIsOwner) return res.status(403).json({error:'Only the Church Administrator can change the Church Administrator account.'});
   const username=String(req.body.username || member.username || '').trim().toLowerCase(); const password=String(req.body.password||'');
   if(!username) return res.status(400).json({error:'Username required'});
-  if(password.length<12) return res.status(400).json({error:'Temporary password must be at least 12 characters.'});
+  if(password.length<10) return res.status(400).json({error:'Temporary password must be at least 10 characters.'});
   member.username=username; await putDoc(tableNames.members,req.churchId,member.id,member,{username,active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
   const user={id:username,username,memberId:member.id,active:member.active!==false,groups:member.groups||[],adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true,password:await hashPassword(password),mustChangePassword:req.body.mustChangePassword!==false,createdAt:nowIso()};
   await putDoc(tableNames.users,req.churchId,username,user,{memberId:member.id,active:user.active,adminAccess:user.adminAccess,churchAdministrator:user.churchAdministrator});

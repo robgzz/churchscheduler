@@ -24,7 +24,7 @@ test('V2.2 song picker keeps save controls outside the scrolling song list',()=>
 test('V2.2 includes server read caching and optimized PWA shell caching',()=>{
   assert.match(repo,/cacheTtlByTable/);
   assert.match(repo,/tableNames\.songs, 10\*60\*1000/);
-  assert.match(sw,/church-v2-shell-[5-9]/);
+  assert.match(sw,/church-v2-shell-(?:[5-9]|1[0-9])/);
   assert.match(sw,/staticAsset/);
 });
 
