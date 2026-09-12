@@ -8,6 +8,7 @@ export const moduleCatalog=Object.freeze([
   {id:'visitors',labelEn:'Visitors',labelEs:'Visitantes',defaultEnabled:true},
   {id:'children',labelEn:"Children's Care",labelEs:'Cuidado de Niños',defaultEnabled:true},
   {id:'reports',labelEn:'Reports',labelEs:'Reportes',defaultEnabled:true},
+  {id:'chatHub',labelEn:'Chat Hub',labelEs:'Chat Hub',defaultEnabled:true},
   {id:'events',labelEn:'Events & RSVP',labelEs:'Eventos y Confirmación',defaultEnabled:false},
   {id:'followups',labelEn:'Follow-up',labelEs:'Seguimiento',defaultEnabled:false}
 ]);

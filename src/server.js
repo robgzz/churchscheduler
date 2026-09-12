@@ -16,6 +16,7 @@ import { memberRouter } from './routes/member.js';
 import { adminRouter } from './routes/admin.js';
 import { ownerRouter } from './routes/owner.js';
 import { hubModulesRouter } from './routes/hubModules.js';
+import { chatHubRouter } from './routes/chatHub.js';
 import { requireCsrf, sameOriginWrite } from './security/csrf.js';
 
 const app=express();
@@ -38,7 +39,7 @@ app.use(helmet({
   referrerPolicy:{policy:'no-referrer'},
   hsts: config.nodeEnv==='production' ? {maxAge:31536000,includeSubDomains:true,preload:true} : false
 }));
-app.use((_req,res,next)=>{res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=(), payment=(), usb=()');next();});
+app.use((_req,res,next)=>{res.setHeader('Permissions-Policy','camera=(), microphone=(self), geolocation=(), payment=(), usb=()');next();});
 app.use(compression({threshold:1024}));
 app.use(express.json({limit:'12mb'}));
 app.use(cookieParser());
@@ -47,8 +48,8 @@ app.use('/api',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next(
 app.use(sameOriginWrite);
 app.use(attachIdentity);
 app.use(requireCsrf);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'4.0.1'}));
-app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:'4.0.1'});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable'});}});
+app.get('/healthz',(req,res)=>res.json({ok:true,version:'4.2.0'}));
+app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:'4.2.0'});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable'});}});
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);
@@ -56,6 +57,7 @@ app.use('/api/member',memberRouter);
 app.use('/api/admin',adminRouter);
 app.use('/api/owner',ownerRouter);
 app.use('/api/modules',hubModulesRouter);
+app.use('/api/chat',chatHubRouter);
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../public');
 app.use(express.static(root,{maxAge:config.nodeEnv==='production'?'1h':0,index:false}));
@@ -74,4 +76,4 @@ app.use((err,req,res,next)=>{
 
 await ensureStorage();
 await seedIfNeeded(config.churchId);
-app.listen(config.port,()=>console.log(`Westbury Church Hub V4.0.1 listening on ${config.port}`));
+app.listen(config.port,()=>console.log(`Westbury Church Hub V4.2.0 listening on ${config.port}`));

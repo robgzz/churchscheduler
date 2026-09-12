@@ -9,7 +9,7 @@
 - Managed Identity/RBAC for application data access
 - Basic ACR
 - Container Apps Consumption environment
-- `minReplicas=0` by default for lowest cost; choose `1` if cold-start latency is undesirable
+- `minReplicas=1` by default to keep interactive Home and Chat Hub responsive during normal use; max replicas remain available for service-time bursts
 - Scheduled Container Apps Job runs every 15 minutes by default; scheduler logic itself uses the church timezone when deciding the current three-week window
 
 Container Apps scheduled-job cron expressions are UTC. Because this job simply reconciles state every few minutes rather than representing a worship service time, DST does not require separate CST/CDT jobs.
@@ -50,3 +50,12 @@ The default `*.azurecontainerapps.io` HTTPS URL is sufficient for V2. A custom c
 ## ACS SMS/email later
 
 Azure Communication Services is intentionally not provisioned in this package. Notification channel preferences and provider integration can be layered onto the API after toll-free/SMS compliance decisions are made.
+
+
+## V4.1 infrastructure upgrade for Chat Hub
+
+V4.1 adds Azure Tables `ChatSessions` and `ChatUnknowns` plus an optional-at-runtime but strongly recommended stable `CHILD_PICKUP_CODE_ENCRYPTION_KEY` Container App secret for encrypted pickup-code recovery. The supplied `first-deploy.ps1` / `first-deploy.sh` generates this key during infrastructure reconciliation and passes it to Bicep.
+
+When upgrading an existing V4.0.1 deployment, run the V4.1 infrastructure reconciliation **once before the first V4.1 GitHub image deployment**. After that, normal application releases continue through GitHub Actions. Keep the same pickup-code encryption key for future infrastructure reconciliations. A changed key does not expose a code; Chat Hub will rotate a legacy/unreadable active code to a new one when the parent requests it, but a stable key avoids unnecessary rotations.
+
+GitHub Actions still uses OIDC, runs the complete automated test suite and syntax checks, builds a SHA-tagged image, updates the warm Container App (`minReplicas=1`, `maxReplicas=6`), updates the scheduler job, and performs a health check.

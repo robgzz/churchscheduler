@@ -21,6 +21,10 @@ param initialOwnerUsername string = 'churchadmin'
 @description('One-time setup code used only to create the first Church Administrator. Change/remove it after bootstrap if desired.')
 param bootstrapCode string
 
+@secure()
+@description('32-byte base64 secret used to encrypt recoverable Children Care pickup codes at rest.')
+param pickupCodeEncryptionKey string
+
 @description('Public placeholder image used for the initial infrastructure deployment. GitHub Actions replaces it with the application image.')
 param initialImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 
@@ -73,6 +77,8 @@ var tableList = [
   'ChurchEvents'
   'EventRegistrations'
   'FollowUps'
+  'ChatSessions'
+  'ChatUnknowns'
 ]
 var blobContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
 var tableContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
@@ -205,7 +211,10 @@ resource webApp 'Microsoft.App/containerApps@2025-01-01' = {
         transport: 'auto'
       }
       registries: [ { server: acr.properties.loginServer, identity: appIdentity.id } ]
-      secrets: [ { name: 'bootstrap-code', value: bootstrapCode } ]
+      secrets: [
+        { name: 'bootstrap-code', value: bootstrapCode }
+        { name: 'pickup-code-key', value: pickupCodeEncryptionKey }
+      ]
     }
     template: {
       containers: [
@@ -219,6 +228,7 @@ resource webApp 'Microsoft.App/containerApps@2025-01-01' = {
             { name: 'SEED_PROFILE', value: seedProfile }
             { name: 'INITIAL_OWNER_USERNAME', value: initialOwnerUsername }
             { name: 'BOOTSTRAP_CODE', secretRef: 'bootstrap-code' }
+            { name: 'CHILD_PICKUP_CODE_ENCRYPTION_KEY', secretRef: 'pickup-code-key' }
             { name: 'AZURE_STORAGE_ACCOUNT_NAME', value: storage.name }
             { name: 'AZURE_CLIENT_ID', value: appIdentity.properties.clientId }
             { name: 'AZURE_BLOB_ATTACHMENTS_CONTAINER', value: attachmentContainer.name }

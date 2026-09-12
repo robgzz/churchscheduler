@@ -6,6 +6,7 @@ export const config = {
   seedProfile: 'westbury',
   initialOwnerUsername: (process.env.INITIAL_OWNER_USERNAME || 'churchadmin').trim().toLowerCase(),
   bootstrapCode: process.env.BOOTSTRAP_CODE || '',
+  pickupCodeEncryptionKey: process.env.CHILD_PICKUP_CODE_ENCRYPTION_KEY || '',
   storageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME || '',
   storageConnectionString: process.env.AZURE_STORAGE_CONNECTION_STRING || '',
   managedIdentityClientId: process.env.AZURE_CLIENT_ID || '',
@@ -50,4 +51,6 @@ export const tableNames = {
   ,events: 'ChurchEvents'
   ,eventRegistrations: 'EventRegistrations'
   ,followUps: 'FollowUps'
+  ,chatSessions: 'ChatSessions'
+  ,chatUnknowns: 'ChatUnknowns'
 };

@@ -30,3 +30,5 @@ export const loginIpLimiter=rateLimit({windowMs:15*60*1000,max:30,keyFn:req=>`lo
 export const loginAccountLimiter=rateLimit({windowMs:15*60*1000,max:10,keyFn:req=>`login-user:${String(req.body?.username||'').trim().toLowerCase()}:${req.ip||'unknown'}`});
 export const setupLimiter=rateLimit({windowMs:60*60*1000,max:8,keyFn:req=>`setup:${req.ip||'unknown'}`});
 export const publicWriteLimiter=rateLimit({windowMs:15*60*1000,max:20,keyFn:req=>`public-write:${req.ip||'unknown'}`});
+
+export const chatRateLimiter=rateLimit({windowMs:60*1000,max:45,keyFn:req=>`chat:${req.identity?.member?.id||req.identity?.user?.username||req.ip||'unknown'}`,message:'Chat Hub is receiving too many requests. Please wait a moment.'});

@@ -1,4 +1,4 @@
-# Azure Infrastructure Package — Church Scheduler V2
+# Azure Infrastructure Package — Westbury Church Hub V4.1
 
 This folder and the sibling `scripts/` folder deploy Church Scheduler V2 to **Azure public cloud (`AzureCloud`)**.
 
@@ -34,7 +34,7 @@ az login
   -NamePrefix "westburyapp" `
   -ChurchId "westbury" `
   -InitialOwnerUsername "robertogonzalez" `
-  -MinReplicas 0
+  -MinReplicas 1
 ```
 
 If the infra package is in a separate folder, add:
@@ -68,3 +68,8 @@ A real Azure deployment still depends on your subscription permissions, regional
 ## V2.5 communications infrastructure
 
 `communications.bicep` is deliberately separate from `main.bicep`. This lets you add or change ACS without reconciling the scheduler/storage/container infrastructure. Use `scripts/deploy-communications.ps1` for ACS provisioning and `scripts/enable-acs.ps1` only after email DNS verification is complete.
+
+
+## V4.1 Chat Hub resources
+
+`main.bicep` provisions `ChatSessions` and `ChatUnknowns` tables. It also defines the secure `pickupCodeEncryptionKey` parameter and exposes it to the web container only as the `CHILD_PICKUP_CODE_ENCRYPTION_KEY` secret reference. The value is not embedded in source. The first-deploy scripts generate a 32-byte base64 value when one is not supplied. For later infrastructure reconciliations, supply/reuse the same value when possible.

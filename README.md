@@ -1,8 +1,26 @@
-# Westbury Church Hub V4.0.0
+# Westbury Church Hub V4.2.0
 
+
+## V4.2 highlights
+
+- Exact-state member import that can replace stale ministry/service/assignment eligibility.
+- Announcement activity date and time fields.
+- Assigned Follow-up tasks visible to members.
+- Persistent member RSVP state and named RSVP reporting.
+- Much deeper deterministic Chat Hub program/content/task/admin workflows and improved voice question/request handling.
+
+See `RELEASE-NOTES-V4.2.0.md`, `docs/V4.2-UPGRADE.md`, and `docs/CHAT-HUB-V4.2.md`.
 **Westbury-only edition — by Exonuvia.** This package is intentionally dedicated to Westbury Church of Christ and runs as a single-church deployment.
 
-Production PWA for modular church operations. V4 adds church-wide module controls, safer Children Care handoffs, strengthened reporting, Events/RSVP, and Follow-up while preserving worship scheduling, communications, content, and audit history.
+Production PWA for modular church operations. V4.2 expands **Chat Hub** into a deeper deterministic conversational interface and improves member imports, announcements, follow-up tasks, and Events RSVP while preserving the scheduling, communications, Children Care, content, reporting, and audit architecture.
+
+## Chat Hub
+
+Chat Hub is a normal Church Hub module and can be enabled/disabled by the Church Administrator from **Manage Modules**. It does **not** use generative AI. Member/admin language is normalized and mapped to a known intent catalog, checked against the signed-in account's permissions, and dispatched through server-side Church Hub handlers.
+
+V4.2 coverage includes assignments and Cantos history, worship-program questions, weekly summaries, announcement counting/search/details, events and personal RSVP state, assigned tasks, public prayer requests, replacement/unavailability workflows, Children Care status/pickup-code recovery/pickup requests, plus authorized admin program, people, publication, event, task and module workflows. The member UI keeps Chat Hub visible in navigation, Home, and a floating shortcut and includes a large press-and-hold microphone control.
+
+See `docs/CHAT-HUB-V4.2.md` and `RELEASE-NOTES-V4.2.0.md`.
 
 # Church Hub V2.4
 
@@ -71,7 +89,7 @@ The Westbury seed now includes the supplied live Netlify `songLibrary`: **216 so
 - Public HTTPS Container App (`external: true`)
 - Scheduled Container Apps Job
 
-The app defaults to `minReplicas=0` to minimize cost. Set it to `1` if avoiding cold starts is more important than the lowest possible cost.
+The production infrastructure defaults to `minReplicas=1` so Home and Chat Hub stay responsive during normal use, with burst scaling up to six replicas.
 
 ## First Azure deployment (Windows / PowerShell)
 
@@ -92,7 +110,7 @@ az login
   -NamePrefix "westburyapp" `
   -ChurchId "westbury" `
   -InitialOwnerUsername "robertogonzalez" `
-  -MinReplicas 0
+  -MinReplicas 1
 ```
 
 The script:

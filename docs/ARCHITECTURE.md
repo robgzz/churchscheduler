@@ -1,3 +1,7 @@
+# Chat Hub V4.1 addition
+
+V4.1 adds a deterministic conversational application layer under `src/chatHub/`. It is an optional server-enforced module and calls domain services/handlers rather than bypassing authorization or the repository layer. See `CHAT-HUB-V4.1.md`.
+
 # V2 Architecture
 
 ## Runtime

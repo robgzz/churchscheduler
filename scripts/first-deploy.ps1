@@ -7,8 +7,9 @@ param(
   [string]$SeedProfile = "westbury",
   [string]$InitialOwnerUsername = "churchadmin",
   [string]$SubscriptionId = "",
-  [ValidateRange(0,2)][int]$MinReplicas = 0,
+  [ValidateRange(0,2)][int]$MinReplicas = 1,
   [string]$BootstrapCode = "",
+  [string]$PickupCodeEncryptionKey = "",
   [string]$AppSourcePath = ""
 )
 
@@ -54,8 +55,62 @@ if (-not (Test-Path (Join-Path $appRoot "Dockerfile"))) { throw "AppSourcePath m
 # This prevents the app/job from being temporarily reset to the public placeholder images.
 $appNameExpected = "$NamePrefix-web"
 $jobNameExpected = "$NamePrefix-scheduler"
-$currentWebImage = az containerapp show --resource-group $ResourceGroup --name $appNameExpected --query "properties.template.containers[0].image" -o tsv 2>$null
-$currentJobImage = az containerapp job show --resource-group $ResourceGroup --name $jobNameExpected --query "properties.template.containers[0].image" -o tsv 2>$null
+# Windows PowerShell 5.1 can promote Azure CLI extension warnings written to STDERR
+# into NativeCommandError when $ErrorActionPreference is Stop. These lookups are
+# best-effort, so temporarily allow native warnings and explicitly inspect exit codes.
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+  $ErrorActionPreference = "Continue"
+
+  $currentWebImage = & az containerapp show `
+    --resource-group $ResourceGroup `
+    --name $appNameExpected `
+    --query "properties.template.containers[0].image" `
+    -o tsv 2>$null
+  $webLookupExit = $LASTEXITCODE
+  if ($webLookupExit -ne 0) { $currentWebImage = "" }
+
+  $currentJobImage = & az containerapp job show `
+    --resource-group $ResourceGroup `
+    --name $jobNameExpected `
+    --query "properties.template.containers[0].image" `
+    -o tsv 2>$null
+  $jobLookupExit = $LASTEXITCODE
+  if ($jobLookupExit -ne 0) { $currentJobImage = "" }
+
+  # If V4.1 infrastructure has already been reconciled once, preserve the
+  # existing Children Care encryption secret on a retry/redeploy.
+  if (-not $PSBoundParameters.ContainsKey("PickupCodeEncryptionKey")) {
+    $existingPickupKey = & az containerapp secret list `
+      --resource-group $ResourceGroup `
+      --name $appNameExpected `
+      --query "[?name=='pickup-code-key'].value | [0]" `
+      -o tsv 2>$null
+    $secretLookupExit = $LASTEXITCODE
+    if ($secretLookupExit -eq 0 -and $existingPickupKey) {
+      $PickupCodeEncryptionKey = $existingPickupKey.Trim()
+      Write-Host "Reusing existing Children Care encryption key." -ForegroundColor DarkGray
+    }
+  }
+}
+finally {
+  $ErrorActionPreference = $previousErrorActionPreference
+}
+
+# Generate a cryptographically secure 32-byte key only when the caller did not
+# supply one and an existing deployed secret could not be recovered.
+if (-not $PickupCodeEncryptionKey) {
+  $bytes = New-Object byte[] 32
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  try {
+    $rng.GetBytes($bytes)
+  }
+  finally {
+    $rng.Dispose()
+  }
+  $PickupCodeEncryptionKey = [Convert]::ToBase64String($bytes)
+  Write-Host "Generated a new Children Care encryption key for this deployment." -ForegroundColor DarkGray
+}
 
 $bicepParams = @(
   "namePrefix=$NamePrefix",
@@ -64,7 +119,8 @@ $bicepParams = @(
   "seedProfile=$SeedProfile",
   "initialOwnerUsername=$InitialOwnerUsername",
   "minReplicas=$MinReplicas",
-  "bootstrapCode=$BootstrapCode"
+  "bootstrapCode=$BootstrapCode",
+  "pickupCodeEncryptionKey=$PickupCodeEncryptionKey"
 )
 if ($currentWebImage) { $bicepParams += "initialImage=$currentWebImage" }
 if ($currentJobImage) { $bicepParams += "initialJobImage=$currentJobImage" }
@@ -84,7 +140,7 @@ $o = $d.properties.outputs
 $acr = $o.containerRegistryName.value
 $app = $o.containerAppName.value
 $job = $o.schedulerJobName.value
-$tag = "v2.5.0-$(Get-Date -Format yyyyMMddHHmmss)"
+$tag = "v4.2.0-$(Get-Date -Format yyyyMMddHHmmss)"
 $image = "$($o.containerRegistryLoginServer.value)/church-scheduler-v2:$tag"
 
 Write-Host "Building application image $tag in Azure Container Registry..." -ForegroundColor Cyan

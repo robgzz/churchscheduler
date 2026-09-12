@@ -7,11 +7,16 @@ NAME_PREFIX="${NAME_PREFIX:-churchv2}"
 CHURCH_ID="${CHURCH_ID:-westbury}"
 SEED_PROFILE="${SEED_PROFILE:-westbury}"
 INITIAL_OWNER_USERNAME="${INITIAL_OWNER_USERNAME:-churchadmin}"
-MIN_REPLICAS="${MIN_REPLICAS:-0}"
+MIN_REPLICAS="${MIN_REPLICAS:-1}"
 APP_SOURCE_PATH="${APP_SOURCE_PATH:-}"
 BOOTSTRAP_CODE="${BOOTSTRAP_CODE:-$(python3 - <<'PY'
 import secrets
 print(secrets.token_urlsafe(30))
+PY
+)}"
+PICKUP_CODE_ENCRYPTION_KEY="${PICKUP_CODE_ENCRYPTION_KEY:-$(python3 - <<'PY'
+import secrets, base64
+print(base64.b64encode(secrets.token_bytes(32)).decode())
 PY
 )}"
 
@@ -35,7 +40,7 @@ APP_SOURCE_PATH="$(cd "$APP_SOURCE_PATH" && pwd)"
 DEPLOYMENT="church-v2-$(date +%Y%m%d%H%M%S)"
 OUT="$(az deployment group create -g "$RESOURCE_GROUP" -n "$DEPLOYMENT" -f "$ROOT/infra/main.bicep" \
   -p namePrefix="$NAME_PREFIX" location="$LOCATION" churchId="$CHURCH_ID" seedProfile="$SEED_PROFILE" \
-     initialOwnerUsername="$INITIAL_OWNER_USERNAME" minReplicas="$MIN_REPLICAS" bootstrapCode="$BOOTSTRAP_CODE" -o json)"
+     initialOwnerUsername="$INITIAL_OWNER_USERNAME" minReplicas="$MIN_REPLICAS" bootstrapCode="$BOOTSTRAP_CODE" pickupCodeEncryptionKey="$PICKUP_CODE_ENCRYPTION_KEY" -o json)"
 
 ACR="$(jq -r '.properties.outputs.containerRegistryName.value' <<<"$OUT")"
 APP="$(jq -r '.properties.outputs.containerAppName.value' <<<"$OUT")"
