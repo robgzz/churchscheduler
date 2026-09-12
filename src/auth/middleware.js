@@ -41,7 +41,7 @@ export function requireAnyGroup(...allowedGroups){
 
 export function requireAdmin(req,res,next){
   if (!req.identity) return res.status(401).json({error:'Authentication required',code:'AUTH_REQUIRED'});
-  const allowed = req.identity.member?.adminAccess === true || req.identity.user?.adminAccess === true || req.identity.user?.churchAdministrator === true;
+  const allowed = req.identity.member?.adminAccess === true || req.identity.member?.churchAdministrator === true || req.identity.user?.adminAccess === true || req.identity.user?.churchAdministrator === true;
   if (!allowed) return res.status(403).json({error:'Admin access required',code:'ADMIN_REQUIRED'});
   next();
 }

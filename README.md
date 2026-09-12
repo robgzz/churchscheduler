@@ -1,26 +1,26 @@
-# Westbury Church Hub V4.2.0
+# Westbury Church Hub V4.4.0
 
+## V4.4 highlights
 
-## V4.2 highlights
+- Administrator Console reliability fix: Church Administrator authorization is now consistent on both server and client, and admin/JavaScript assets use cache-busted network-first loading to prevent stale module graphs.
+- Bottom navigation is a true horizontal touch-scroll strip for phones with many modules.
+- Events and assigned tasks disappear from the member screen after the church-local end of their date while their final status remains reportable. Members can cancel or hide them earlier.
+- Members can delete any of their own prayer requests at any time; public prayer visibility still expires automatically after 14 days.
+- Church News now separates one current weekly bulletin from the announcement/news feed with a warmer news-style presentation.
+- Chat Hub uses a broader bilingual/Spanglish deterministic grammar layer in addition to phrase matching, context, typo normalization, permissions, module checks and confirmation workflows.
+- Security/performance review retained CSP/Helmet, same-origin + CSRF write protection, opaque sessions, per-user Chat Hub rate limiting, private Azure storage patterns, compression, server-side module enforcement, health/readiness checks, and Container Apps autoscaling.
 
-- Exact-state member import that can replace stale ministry/service/assignment eligibility.
-- Announcement activity date and time fields.
-- Assigned Follow-up tasks visible to members.
-- Persistent member RSVP state and named RSVP reporting.
-- Much deeper deterministic Chat Hub program/content/task/admin workflows and improved voice question/request handling.
+See `RELEASE-NOTES-V4.4.0.md`, `docs/V4.4-UPGRADE.md`, and `docs/CHAT-HUB-V4.4.md`.
 
-See `RELEASE-NOTES-V4.2.0.md`, `docs/V4.2-UPGRADE.md`, and `docs/CHAT-HUB-V4.2.md`.
 **Westbury-only edition — by Exonuvia.** This package is intentionally dedicated to Westbury Church of Christ and runs as a single-church deployment.
 
-Production PWA for modular church operations. V4.2 expands **Chat Hub** into a deeper deterministic conversational interface and improves member imports, announcements, follow-up tasks, and Events RSVP while preserving the scheduling, communications, Children Care, content, reporting, and audit architecture.
+Production PWA for modular church operations. V4.4 focuses on reliability and lifecycle correctness while making deterministic Chat Hub feel substantially more conversational without granting it any authority beyond the signed-in user's existing permissions.
 
 ## Chat Hub
 
-Chat Hub is a normal Church Hub module and can be enabled/disabled by the Church Administrator from **Manage Modules**. It does **not** use generative AI. Member/admin language is normalized and mapped to a known intent catalog, checked against the signed-in account's permissions, and dispatched through server-side Church Hub handlers.
+Chat Hub remains a normal Church Hub module that the Church Administrator can enable or disable. It does **not** use generative AI. Language is normalized into deterministic intents and entities, scored with bilingual/Spanglish phrase and concept grammar, clarified when ambiguous, permission-checked, module-checked, and executed only through known Church Hub handlers.
 
-V4.2 coverage includes assignments and Cantos history, worship-program questions, weekly summaries, announcement counting/search/details, events and personal RSVP state, assigned tasks, public prayer requests, replacement/unavailability workflows, Children Care status/pickup-code recovery/pickup requests, plus authorized admin program, people, publication, event, task and module workflows. The member UI keeps Chat Hub visible in navigation, Home, and a floating shortcut and includes a large press-and-hold microphone control.
-
-See `docs/CHAT-HUB-V4.2.md` and `RELEASE-NOTES-V4.2.0.md`.
+V4.4 covers member navigation, service times, assignments, worship-program questions, Cantos search/history, replacements, planned absence, profile/notifications, weekly bulletins, announcements, events/RSVP/hide, tasks/complete/cancel/hide, prayer lists/create/delete, Children Care pickup/recovery/caregiver status, plus authorized administrator console access, members/accounts, scheduling, pending Cantos, publications, events and RSVP lists, visitors/access requests, tasks, prayer review, Children Care status, reports, communications, audit, and module administration.
 
 # Church Hub V2.4
 

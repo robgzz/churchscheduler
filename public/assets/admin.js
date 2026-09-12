@@ -1,4 +1,4 @@
-import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js';
+import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js?v=440';
 
 const $=(s,r=document)=>r.querySelector(s), main=$('#admin-main'), nav=$('#admin-nav'), title=$('#admin-title');
 const state={me:null,bootstrap:null,tab:'home',people:null,services:null,churchProfile:null,contentTab:'news',songs:null,csrf:null};
@@ -22,8 +22,31 @@ applyTheme();
 function applyBranding(){const church=state.bootstrap?.church||{};const name=locale()==='en'?(church.churchNameEn||church.churchName):(church.churchNameEs||church.churchName);$('#admin-church-name').textContent=name||'Church';const logoEl=$('#admin-logo'),logo=church.logoUrl||'';if(logoEl){if(logo){logoEl.src=logo;logoEl.classList.remove('hidden');}else logoEl.classList.add('hidden');}document.documentElement.style.setProperty('--accent',church.accentColor||'#2563eb');}
 function bindHeaderControls(){const back=$('#admin-back-btn');if(back)back.onclick=()=>{window.location.assign('/');};const lang=$('#admin-language-btn');lang.textContent=locale()==='es'?'ES':'EN';lang.onclick=()=>{setLocale(locale()==='es'?'en':'es');savePreferences().catch(()=>{});renderAll();};$('#admin-theme-btn').onclick=toggleTheme;}
 function tabs(){return[['home','🏠',t('common.home')],['people','👥',t('common.people')],['schedule','📅',t('common.schedule')],['content','📣',t('common.content')],['settings','⚙️',t('common.settings')]];}
-function renderNav(){nav.innerHTML=tabs().map(([id,ico,label])=>`<button class="nav-btn ${state.tab===id?'active':''}" data-tab="${id}"><span class="ico">${ico}</span>${esc(label)}</button>`).join('');nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;render();});}
-async function init(){try{state.me=await api('/api/auth/me');state.csrf=state.me.csrfToken||null;if(!(state.me.member?.adminAccess||state.me.user?.adminAccess||state.me.user?.churchAdministrator))throw new Error(t('error.admin'));state.bootstrap=await api('/api/public/bootstrap');initLocale(state.bootstrap.church?.defaultLocale||'es');if(state.me?.member?.preferences?.locale)setLocale(state.me.member.preferences.locale,false);if(state.me?.member?.preferences?.theme)applyTheme(state.me.member.preferences.theme);state.bootstrap=await api('/api/public/bootstrap');applyBranding();bindHeaderControls();renderNav();render();}catch{location.href='/';}}
+function renderNav(){nav.innerHTML=tabs().map(([id,ico,label])=>`<button class="nav-btn ${state.tab===id?'active':''}" data-tab="${id}"><span class="ico">${ico}</span>${esc(label)}</button>`).join('');nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;render();});requestAnimationFrame(()=>nav.querySelector('.nav-btn.active')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}));}
+async function init(){
+  main.innerHTML=`<div class="card empty">${t('common.loading')}</div>`;
+  try{
+    state.me=await api('/api/auth/me');
+    state.csrf=state.me.csrfToken||null;
+    const memberOwner=state.me.member?.churchAdministrator===true;
+    const allowed=!!(state.me?.member?.adminAccess||memberOwner||state.me?.user?.adminAccess||state.me?.user?.churchAdministrator);
+    if(!allowed) throw new Error(t('error.admin'));
+    state.bootstrap=await api('/api/public/bootstrap');
+    initLocale(state.bootstrap.church?.defaultLocale||'es');
+    if(state.me?.member?.preferences?.locale)setLocale(state.me.member.preferences.locale,false);
+    if(state.me?.member?.preferences?.theme)applyTheme(state.me.member.preferences.theme);
+    applyBranding();
+    bindHeaderControls();
+    renderNav();
+    await home();
+  }catch(err){
+    console.error('Admin portal initialization failed',err);
+    nav.innerHTML='';
+    main.innerHTML=`<div class="admin-load-error card stack"><div class="status-orb warn">!</div><h2>${esc(l('Administrator console could not load','No se pudo cargar la consola de administrador'))}</h2><p class="muted">${esc(err?.message||l('Unexpected loading error','Error inesperado al cargar'))}</p><div class="button-grid"><button class="btn" id="admin-retry">${esc(l('Try again','Intentar de nuevo'))}</button><button class="btn secondary" id="admin-return">${esc(l('Return to Church Hub','Regresar a Church Hub'))}</button></div></div>`;
+    $('#admin-retry')?.addEventListener('click',()=>location.reload());
+    $('#admin-return')?.addEventListener('click',()=>window.location.assign('/'));
+  }
+}
 function renderAll(){applyBranding();bindHeaderControls();renderNav();render();}
 function render(){const current=tabs().find(x=>x[0]===state.tab);title.textContent=current?.[2]||t('common.admin');if(state.tab==='home')return home();if(state.tab==='people')return people();if(state.tab==='schedule')return schedule();if(state.tab==='content')return content();if(state.tab==='settings')return settings();}
 

@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { requireLogin, requireGroup, requireAnyGroup } from '../auth/middleware.js';
 import { tableNames } from '../config.js';
-import { putDoc, listDocs, getDoc, nowIso, createDoc } from '../storage/repository.js';
+import { putDoc, listDocs, getDoc, deleteDoc, nowIso, createDoc } from '../storage/repository.js';
 import { myAssignments, listProgramViews } from '../services/programs.js';
 import { addUnavailability } from '../services/unavailability.js';
 import { requestReplacement } from '../services/replacements.js';
@@ -45,17 +45,40 @@ memberRouter.get('/programs',requireModule('worship'),requireAnyGroup('members',
 });
 memberRouter.post('/unavailability',requireGroup('worship'),async(req,res)=>res.status(201).json(await addUnavailability(req.churchId,req.identity.member.id,req.body)));
 memberRouter.post('/replacement/:assignmentId',requireGroup('worship'),async(req,res)=>res.json(await requestReplacement(req.churchId,req.identity.member.id,req.params.assignmentId,{reason:'member_request'})));
+const PETITION_RETENTION_DAYS=14;
+function petitionCutoffIso(){const d=new Date();d.setUTCDate(d.getUTCDate()-PETITION_RETENTION_DAYS);return d.toISOString();}
+function petitionExpired(p){return Boolean(p?.createdAt)&&String(p.createdAt)<petitionCutoffIso();}
+async function expireOldPetitions(churchId){
+  const rows=await listDocs(tableNames.petitions,churchId,{max:5000});
+  await Promise.all(rows.filter(p=>p.status!=='expired'&&petitionExpired(p)).map(async p=>{
+    const doc={...p,status:'expired',expiredAt:p.expiredAt||nowIso()};
+    await putDoc(tableNames.petitions,churchId,doc.id,doc,{memberId:doc.memberId||'',status:'expired',createdAt:doc.createdAt||''});
+  }));
+  return rows.map(p=>petitionExpired(p)?{...p,status:'expired'}:p);
+}
 memberRouter.get('/petitions',requireModule('prayer'),requireGroup('members'),async(req,res)=>{
-  const rows=await listDocs(tableNames.petitions,req.churchId,{max:500});
-  res.json(rows.filter(p=>p.private!==true).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).map(p=>({id:p.id,memberId:p.memberId,memberName:p.memberName,text:p.text,createdAt:p.createdAt,status:p.status})));
+  const rows=await expireOldPetitions(req.churchId);
+  res.json(rows.filter(p=>p.private!==true).filter(p=>p.status!=='expired').sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).map(p=>({id:p.id,memberId:p.memberId,memberName:p.memberName,text:p.text,createdAt:p.createdAt,status:p.status})));
+});
+memberRouter.get('/petitions/mine',requireModule('prayer'),requireGroup('members'),async(req,res)=>{
+  const rows=await expireOldPetitions(req.churchId);
+  res.json(rows.filter(p=>p.memberId===req.identity.member.id).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).map(p=>({...p,canDelete:true})));
 });
 memberRouter.post('/petitions',requireModule('prayer'),requireGroup('members'),async(req,res)=>{
   const id=`petition_${crypto.randomUUID().replace(/-/g,'').slice(0,14)}`;
-  const doc={id,memberId:req.identity.member.id,memberName:req.identity.member.fullName,text:String(req.body.text||'').trim(),private:req.body.private!==false,status:'new',createdAt:nowIso()};
+  const doc={id,memberId:req.identity.member.id,memberName:req.identity.member.fullName,text:String(req.body.text||'').trim().slice(0,4000),private:req.body.private!==false,status:'new',createdAt:nowIso(),expiresAt:new Date(Date.now()+PETITION_RETENTION_DAYS*86400000).toISOString()};
   if(!doc.text) return res.status(400).json({error:'Petition text is required.',code:'PETITION_REQUIRED'});
   await putDoc(tableNames.petitions,req.churchId,id,doc,{memberId:doc.memberId,status:'new',createdAt:doc.createdAt});
   await enqueueAdminAlert(req.churchId,{type:'petition',id,summary:`New prayer petition from ${doc.memberName}. Open the Church Scheduler Admin console.`});
-  res.status(201).json({ok:true,id});
+  res.status(201).json({ok:true,id,expiresAt:doc.expiresAt});
+});
+// V4.4: PETITION_DELETE_NOT_YET_AVAILABLE intentionally retired; owners may delete their own petition at any time.
+memberRouter.delete('/petitions/:id',requireModule('prayer'),requireGroup('members'),async(req,res)=>{
+  const row=await getDoc(tableNames.petitions,req.churchId,req.params.id);
+  if(!row||row.memberId!==req.identity.member.id)return res.status(404).json({error:'Petition not found'});
+  await deleteDoc(tableNames.petitions,req.churchId,row.id);
+  await appendHistory(req.churchId,{eventType:'petition.deleted_by_owner',memberId:req.identity.member.id,source:'member',details:{petitionId:row.id}});
+  res.json({ok:true});
 });
 memberRouter.get('/songs',requireGroup('worship'),async(req,res)=>res.json((await listDocs(tableNames.songs,req.churchId,{max:2000})).filter(s=>s.active!==false)));
 
@@ -148,17 +171,46 @@ memberRouter.put('/children/:id',async(req,res)=>{const row=await getDoc(tableNa
 memberRouter.post('/children/:id/check-in',async(req,res,next)=>{try{if(req.identity.member.childrenProgramEnabled!==true)return res.status(409).json({error:'Enroll in Children check-in first.',code:'CHILDREN_NOT_ENROLLED'});const child=await getDoc(tableNames.children,req.churchId,req.params.id);if(!child||child.memberId!==req.identity.member.id||child.active===false)return res.status(404).json({error:'Child not found'});const active=(await listDocs(tableNames.childCheckIns,req.churchId,{filter:`childId eq '${String(child.id).replace(/'/g,"''")}'`,max:100})).find(x=>['checked_in','pickup_requested'].includes(x.status));if(active)return res.status(200).json({...safeChildCheckIn(active),alreadyCheckedIn:true});const settings=await getDoc(tableNames.settings,req.churchId,'church')||{},timezone=settings.timezone||'America/Chicago',dateISO=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const id=`checkin_${crypto.randomUUID().replace(/-/g,'').slice(0,16)}`,pickupCode=String(crypto.randomInt(100000,1000000)),pickupCodeHash=crypto.createHash('sha256').update(`${req.churchId}|${id}|${pickupCode}`).digest('hex'),doc={id,childId:child.id,childName:child.name,childAge:child.age,childGender:child.gender||'unspecified',careArea:child.careArea||'',specialInstructions:child.specialInstructions||'',memberId:req.identity.member.id,parentName:req.identity.member.fullName||'',status:'checked_in',checkInAt:nowIso(),checkedInBy:req.identity.member.id,pickupCodeHash,pickupCodeEncrypted:encryptPickupCode(pickupCode),pickupCodeAttempts:0,serviceId:String(req.body.serviceId||''),dateISO,createdAt:nowIso()};await createDoc(tableNames.childCheckIns,req.churchId,id,doc,{memberId:doc.memberId,childId:doc.childId,status:doc.status,dateISO:doc.dateISO,careArea:doc.careArea});await appendHistory(req.churchId,{eventType:'children.checkin',memberId:doc.memberId,dateISO:doc.dateISO,source:'member',details:{childId:child.id,childName:child.name,checkInId:id,careArea:doc.careArea}});const notificationsQueued=await notifyFamilyChildren(req.churchId,req.identity.member,{eventKey:`children-checkin:${id}`,subject:'Westbury Church Hub - Children check-in',message:`${child.name} is checked in. Pickup code: ${pickupCode}.`,metadata:{action:'checkin',checkInId:id,childId:child.id,route:'children'}});res.status(201).json({...safeChildCheckIn(doc),pickupCode,notificationsQueued});}catch(e){next(e);}});
 memberRouter.post('/children/check-ins/:id/pickup',async(req,res)=>{const row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row||row.memberId!==req.identity.member.id)return res.status(404).json({error:'Check-in not found'});if(row.status!=='checked_in')return res.status(409).json({error:'Child is not currently checked in'});row.status='pickup_requested';row.pickupRequestedAt=nowIso();row.pickupRequestedBy=req.identity.member.id;await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});await appendHistory(req.churchId,{eventType:'children.pickup.requested',memberId:row.memberId,dateISO:row.dateISO||'',source:'member',details:{childId:row.childId,childName:row.childName,checkInId:row.id}});res.json({ok:true,row:safeChildCheckIn(row)});});
 
+
+memberRouter.post('/children/check-ins/:id/parent-verification',async(req,res,next)=>{try{
+  const row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);
+  if(!row||row.memberId!==req.identity.member.id||!['checked_in','pickup_requested'].includes(row.status))return res.status(404).json({error:'Active check-in not found'});
+  const token=String(crypto.randomInt(100000,1000000)),expiresAt=new Date(Date.now()+5*60*1000).toISOString();
+  row.parentVerificationHash=crypto.createHash('sha256').update(`${req.churchId}|${row.id}|parent-verify|${token}`).digest('hex');
+  row.parentVerificationExpiresAt=expiresAt;
+  row.parentVerificationIssuedAt=nowIso();
+  await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});
+  await appendHistory(req.churchId,{eventType:'children.parent_verification.issued',memberId:row.memberId,dateISO:row.dateISO||'',source:'member',details:{checkInId:row.id,childId:row.childId,expiresAt}});
+  res.json({ok:true,verificationCode:token,expiresAt,childName:row.childName});
+}catch(e){next(e);}});
+
 memberRouter.get('/children-worker',async(req,res,next)=>{try{const roles=assertChildrenWorker(req.identity.member),settings=await getDoc(tableNames.settings,req.churchId,'church')||{},timezone=settings.timezone||'America/Chicago',today=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const [checkIns,members]=await Promise.all([listDocs(tableNames.childCheckIns,req.churchId,{max:2000}),listDocs(tableNames.members,req.churchId,{max:5000})]);const mm=new Map(members.map(m=>[m.id,m])),active=checkIns.filter(x=>['checked_in','pickup_requested'].includes(x.status)),areaCounts={nursery:active.filter(x=>x.careArea==='nursery').length,toddlers:active.filter(x=>x.careArea==='toddlers').length};const rows=active.filter(x=>roles.includes(String(x.careArea||''))).map(x=>{const parent=mm.get(x.memberId)||{};return {id:x.id,childId:x.childId,childName:x.childName,childAge:x.childAge,childGender:x.childGender,careArea:x.careArea,specialInstructions:x.specialInstructions,status:x.status,dateISO:x.dateISO,checkInAt:x.checkInAt,pickupRequestedAt:x.pickupRequestedAt||'',parentName:x.parentName||parent.fullName||'',parentHasSms:Boolean(parent.phone)&&parent.childrenNotificationPreferences?.sms!==false,parentHasEmail:Boolean(parent.email)&&parent.childrenNotificationPreferences?.email!==false,parentHasPush:parent.childrenNotificationPreferences?.push!==false,stale:String(x.dateISO||'')<today};}).sort((a,b)=>String(a.checkInAt||'').localeCompare(String(b.checkInAt||'')));res.json({roles,dateISO:today,children:rows,areaCounts,lastUpdatedAt:nowIso()});}catch(e){next(e);}});
 memberRouter.post('/children-worker/check-ins/:id/alert',async(req,res,next)=>{try{const roles=assertChildrenWorker(req.identity.member),row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row||!['checked_in','pickup_requested'].includes(row.status)||!roles.includes(String(row.careArea||'')))return res.status(404).json({error:'Active child check-in not found for your care area.'});const parent=await getDoc(tableNames.members,req.churchId,row.memberId);if(!parent)return res.status(404).json({error:'Parent/guardian profile not found'});const prefs=parent.childrenNotificationPreferences||{},message=String(req.body.message||`${row.childName} needs you in the ${row.careArea==='nursery'?'Nursery':'Toddlers area'}. Please come to the children’s ministry check-in area.`).trim().slice(0,500),eventKey=`children-parent-alert:${row.id}:${Date.now()}`;let queued=0;for(const channel of ['sms','email','push']){if(channel==='sms'&&prefs.sms===false)continue;if(channel==='email'&&prefs.email===false)continue;if(channel==='push'&&prefs.push===false)continue;if(await enqueue({churchId:req.churchId,eventKey,channel,member:parent,subject:'Westbury Church Hub - Child care alert',message,metadata:{priority:'urgent',type:'children.parent_alert',checkInId:row.id,childId:row.childId,careArea:row.careArea,route:'children'}}))queued++;}const delivery=await dispatchQueue(req.churchId,{max:50});const alertId=`alert_${crypto.randomUUID().replace(/-/g,'').slice(0,16)}`;await appendHistory(req.churchId,{id:alertId,eventType:'children.parent_alert',memberId:parent.id,dateISO:row.dateISO||'',source:'children-worker',details:{checkInId:row.id,childId:row.childId,childName:row.childName,careArea:row.careArea,workerId:req.identity.member.id,queued,delivery}});res.json({ok:true,alertId,queued,delivery});}catch(e){next(e);}});
-memberRouter.post('/children-worker/check-ins/:id/release',async(req,res,next)=>{try{const roles=assertChildrenWorker(req.identity.member),row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row||!['checked_in','pickup_requested'].includes(row.status)||!roles.includes(String(row.careArea||'')))return res.status(404).json({error:'Active child check-in not found for your care area.'});const code=String(req.body?.pickupCode||''),hash=crypto.createHash('sha256').update(`${req.churchId}|${row.id}|${code}`).digest('hex');row.pickupCodeAttempts=Number(row.pickupCodeAttempts||0)+1;if(!row.pickupCodeHash||hash!==row.pickupCodeHash){await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});return res.status(403).json({error:'Pickup code does not match',code:'PICKUP_CODE_MISMATCH'});}const recipientName=String(req.body?.recipientName||row.parentName||'').trim();if(!recipientName)return res.status(400).json({error:'Name of receiving adult is required.'});row.status='picked_up';row.pickupAt=nowIso();row.releasedBy=req.identity.member.id;row.receivedByName=recipientName;delete row.pickupCodeHash;delete row.pickupCodeEncrypted;await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});await appendHistory(req.churchId,{eventType:'children.pickup.verified',memberId:row.memberId,dateISO:row.dateISO||'',source:'children-worker',details:{childId:row.childId,childName:row.childName,checkInId:row.id,releasedBy:row.releasedBy,receivedByName:recipientName}});res.json({ok:true,row});}catch(e){next(e);}});
+memberRouter.post('/children-worker/check-ins/:id/release',async(req,res,next)=>{try{
+  const roles=assertChildrenWorker(req.identity.member),row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);
+  if(!row||!['checked_in','pickup_requested'].includes(row.status)||!roles.includes(String(row.careArea||'')))return res.status(404).json({error:'Active child check-in not found for your care area.'});
+  const method=String(req.body?.verificationMethod||'pickup_code');
+  let verificationLabel='';
+  if(method==='pickup_code'){
+    const code=String(req.body?.pickupCode||''),hash=crypto.createHash('sha256').update(`${req.churchId}|${row.id}|${code}`).digest('hex');
+    row.pickupCodeAttempts=Number(row.pickupCodeAttempts||0)+1;
+    if(!row.pickupCodeHash||hash!==row.pickupCodeHash){await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});return res.status(403).json({error:'Pickup code does not match',code:'PICKUP_CODE_MISMATCH'});}
+    verificationLabel='pickup_code';
+  }else if(method==='parent_verification'){
+    const token=String(req.body?.verificationCode||''),hash=crypto.createHash('sha256').update(`${req.churchId}|${row.id}|parent-verify|${token}`).digest('hex');
+    if(!row.parentVerificationHash||!row.parentVerificationExpiresAt||row.parentVerificationExpiresAt<nowIso()||hash!==row.parentVerificationHash)return res.status(403).json({error:'Parent verification code is invalid or expired',code:'PARENT_VERIFICATION_MISMATCH'});
+    verificationLabel='authenticated_parent_code';
+  }else if(method==='photo_id'){
+    const reason=String(req.body?.verificationReason||'').trim();
+    if(reason.length<10||req.body?.photoIdConfirmed!==true)return res.status(400).json({error:'Photo ID fallback requires confirmation and a reason of at least 10 characters.',code:'PHOTO_ID_CONFIRMATION_REQUIRED'});
+    verificationLabel='photo_id_fallback';row.verificationReason=reason;
+  }else return res.status(400).json({error:'Unsupported verification method'});
+  const recipientName=String(req.body?.recipientName||row.parentName||'').trim();
+  if(!recipientName)return res.status(400).json({error:'Name of receiving adult is required.'});
+  row.status='picked_up';row.pickupAt=nowIso();row.releasedBy=req.identity.member.id;row.receivedByName=recipientName;row.releaseVerificationMethod=verificationLabel;
+  delete row.pickupCodeHash;delete row.pickupCodeEncrypted;delete row.parentVerificationHash;delete row.parentVerificationExpiresAt;
+  await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});
+  await appendHistory(req.churchId,{eventType:'children.pickup.verified',memberId:row.memberId,dateISO:row.dateISO||'',source:'children-worker',details:{childId:row.childId,childName:row.childName,checkInId:row.id,releasedBy:row.releasedBy,receivedByName:recipientName,verificationMethod:verificationLabel,reason:row.verificationReason||''}});
+  res.json({ok:true,row:safeChildCheckIn(row)});
+}catch(e){next(e);}});
 
-memberRouter.put('/preferences',async(req,res)=>{
-  const member=req.identity.member;
-  if(!member) return res.status(400).json({error:'Member profile not found',code:'MEMBER_NOT_FOUND'});
-  const locale=['en','es'].includes(req.body.locale)?req.body.locale:(member.preferences?.locale||'es');
-  const theme=['system','light','dark'].includes(req.body.theme)?req.body.theme:(member.preferences?.theme||'system');
-  member.preferences={...(member.preferences||{}),locale,theme};
-  member.updatedAt=nowIso();
-  await putDoc(tableNames.members,req.churchId,member.id,member,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
-  res.json({ok:true,preferences:member.preferences});
-});
