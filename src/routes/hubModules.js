@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { requireLogin, requireAdmin } from '../auth/middleware.js';
 import { requireModule } from '../modules/registry.js';
 import { tableNames } from '../config.js';
-import { listDocs, getDoc, putDoc, nowIso } from '../storage/repository.js';
+import { listDocs, getDoc, putDoc, deleteDoc, nowIso } from '../storage/repository.js';
 import { appendHistory } from '../scheduler/history.js';
 
 const id=p=>`${p}_${crypto.randomUUID().replace(/-/g,'').slice(0,16)}`;
@@ -77,6 +77,12 @@ hubModulesRouter.put('/admin/events/:id',requireAdmin,requireModule('events'),as
   const doc={...old,...req.body,id:old.id,updatedAt:nowIso(),updatedBy:req.identity.member?.id||''};
   await putDoc(tableNames.events,req.churchId,doc.id,doc,{dateISO:doc.dateISO||'',active:doc.active!==false});res.json(doc);
 });
+hubModulesRouter.delete('/admin/events/:id',requireAdmin,requireModule('events'),async(req,res)=>{
+  const old=await getDoc(tableNames.events,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Event not found'});
+  await deleteDoc(tableNames.events,req.churchId,old.id);
+  await appendHistory(req.churchId,{eventType:'event.deleted',memberId:req.identity.member?.id||'',source:'admin',details:{eventId:old.id,titleEs:old.titleEs||'',titleEn:old.titleEn||''}});
+  res.json({ok:true});
+});
 
 // Tasks expire from the assignee screen after 11:59 PM on dueDate but remain in storage/reports
 // with the final status reached (open, in_progress, completed, or cancelled).
@@ -115,3 +121,4 @@ hubModulesRouter.delete('/followups/:id',requireModule('followups'),async(req,re
 hubModulesRouter.get('/admin/followups',requireAdmin,requireModule('followups'),async(req,res)=>{const rows=await listDocs(tableNames.followUps,req.churchId,{max:5000});res.json(rows.sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||''))));});
 hubModulesRouter.post('/admin/followups',requireAdmin,requireModule('followups'),async(req,res)=>{const title=clean(req.body?.title);if(!title)return res.status(400).json({error:'Follow-up title is required.'});const followId=id('followup'),doc={id:followId,title,sourceType:clean(req.body.sourceType,40),sourceId:clean(req.body.sourceId,100),assignedTo:clean(req.body.assignedTo,100),dueDate:dateOk(req.body.dueDate)?req.body.dueDate:'',status:'open',hiddenByAssignee:false,notes:clean(req.body.notes,2000),createdAt:nowIso(),createdBy:req.identity.member?.id||''};await putDoc(tableNames.followUps,req.churchId,followId,doc,{status:doc.status,assignedTo:doc.assignedTo,dueDate:doc.dueDate});await appendHistory(req.churchId,{eventType:'followup.created',memberId:req.identity.member?.id||'',source:'admin',details:{followUpId:followId,sourceType:doc.sourceType,sourceId:doc.sourceId}});res.status(201).json(doc);});
 hubModulesRouter.put('/admin/followups/:id',requireAdmin,requireModule('followups'),async(req,res)=>{const old=await getDoc(tableNames.followUps,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Follow-up not found'});const allowed=['open','in_progress','completed','cancelled'],doc={...old,...req.body,id:old.id,status:allowed.includes(req.body?.status)?req.body.status:old.status,updatedAt:nowIso(),updatedBy:req.identity.member?.id||''};await putDoc(tableNames.followUps,req.churchId,doc.id,doc,{status:doc.status,assignedTo:doc.assignedTo||'',dueDate:doc.dueDate||''});await appendHistory(req.churchId,{eventType:'followup.updated',memberId:req.identity.member?.id||'',source:'admin',details:{followUpId:doc.id,status:doc.status}});res.json(doc);});
+hubModulesRouter.delete('/admin/followups/:id',requireAdmin,requireModule('followups'),async(req,res)=>{const old=await getDoc(tableNames.followUps,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Follow-up not found'});await deleteDoc(tableNames.followUps,req.churchId,old.id);await appendHistory(req.churchId,{eventType:'followup.deleted',memberId:req.identity.member?.id||'',source:'admin',details:{followUpId:old.id,title:old.title||'',assignedTo:old.assignedTo||''}});res.json({ok:true});});

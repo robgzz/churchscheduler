@@ -1,6 +1,10 @@
-# Westbury Church Hub V6.0.0
+# Westbury Church Hub V6.1.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
+
+## V6.1 — Reliability, Editable Administration & ACS Email
+
+V6.1 builds on the DCE 4.0 Domain Intelligence Engine with editable published content, guarded member-profile deletion, event/task editing, ACS email configuration recovery, and targeted performance improvements. See `RELEASE-NOTES-V6.1.0.md` and `docs/V6.1-UPGRADE.md`.
 
 ## V6.0 — DCE 4.0 Domain Intelligence Engine
 
@@ -10,7 +14,7 @@ The existing V5.6 fixes remain: goal arbitration prevents unfinished workflows f
 
 V6 also strengthens security and stability without increasing login difficulty for Westbury users: production `__Host-` cookies, idle session expiration, Storage-backed login throttling shared across replicas, Fetch Metadata defense, graceful Container Apps shutdown, canonical version reporting and `/readyz` deployment checks. The approved 10-character password rule and temporary `welcome` onboarding flow remain unchanged.
 
-See `RELEASE-NOTES-V6.0.0.md`, `docs/DCE-V6-DOMAIN-INTELLIGENCE.md`, `docs/SECURITY-STABILITY-V6.md`, and `docs/V6-UPGRADE.md`.
+See `RELEASE-NOTES-V6.1.0.md`, `docs/DCE-V6-DOMAIN-INTELLIGENCE.md`, `docs/SECURITY-STABILITY-V6.md`, and `docs/V6-UPGRADE.md`.
 
 ## V5.6 DCE 3.0 — goal arbitration, diagnostics and semantic precision
 

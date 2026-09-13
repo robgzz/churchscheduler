@@ -1,4 +1,4 @@
-# Westbury Church Hub V6.0.0
+# Westbury Church Hub V6.1.0
 
 ## DCE 4.0 / Domain Intelligence Engine
 

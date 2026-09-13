@@ -39,7 +39,7 @@ export async function enqueueAnnouncement(churchId,content){
 export async function enqueueAdminAlert(churchId,{type,id,summary}){
   const church=await getDoc(tableNames.settings,churchId,'church')||{};
   const admins=(await listDocs(tableNames.members,churchId,{max:3000})).filter(m=>m.active!==false&&(m.adminAccess===true||m.churchAdministrator===true)); let queued=0;
-  for(const m of admins){const churchName=localeFor(m)==='en'?(church.churchNameEn||church.churchName||'Church'):(church.churchNameEs||church.churchName||'Iglesia');if(await enqueue({churchId,eventKey:`admin:${type}:${id}`,channel:'sms',member:m,message:`${churchName}: ${summary}`,metadata:{type,id}}))queued++;if(await enqueue({churchId,eventKey:`admin:${type}:${id}`,channel:'push',member:m,subject:churchName,message:summary,metadata:{type,id,route:'admin-content'}}))queued++;}
+  for(const m of admins){const churchName=localeFor(m)==='en'?(church.churchNameEn||church.churchName||'Church'):(church.churchNameEs||church.churchName||'Iglesia');if(await enqueue({churchId,eventKey:`admin:${type}:${id}`,channel:'sms',member:m,message:`${churchName}: ${summary}`,metadata:{type,id}}))queued++;if(await enqueue({churchId,eventKey:`admin:${type}:${id}`,channel:'email',member:m,subject:`${churchName} - ${summary}`.slice(0,160),message:summary,metadata:{type,id}}))queued++;if(await enqueue({churchId,eventKey:`admin:${type}:${id}`,channel:'push',member:m,subject:churchName,message:summary,metadata:{type,id,route:'admin-content'}}))queued++;}
   return {queued};
 }
 

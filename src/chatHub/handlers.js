@@ -20,6 +20,7 @@ import { getProgramAdmin, setProgramAdmin, notifyProgramAdmin, syncProgramStatus
 import { graphFor } from './capabilityGraph.js';
 import { programReadinessTrace, eligibilityTrace } from './ruleTrace.js';
 import { churchCapabilities } from './domain/capabilities.js';
+import { deleteMemberProfile } from '../services/memberDeletion.js';
 
 const escApos=v=>String(v||'').replace(/'/g,"''");
 const activeCheck=x=>['checked_in','pickup_requested'].includes(x.status);
@@ -448,6 +449,20 @@ async function rsvpStart(req,message,state,{cancel=false}={}){
 async function rsvpConfirm(req,event,state,cancel){state.pending={type:cancel?'rsvp.cancel.confirm':'rsvp.register.confirm',eventId:event.id,eventName:event.titleEs||event.titleEn};return reply(`${cancel?'Voy a cancelar tu registro para':'Voy a registrarte para'} “${state.pending.eventName}”. ¿Confirmas?`,`${cancel?'I will cancel your registration for':'I will register you for'} “${state.pending.eventName}”. Confirm?`,{pending:true,actions:[{id:cancel?'rsvp:cancel-confirm':'rsvp:register-confirm',labelEs:cancel?'Cancelar registro':'Confirmar asistencia',labelEn:cancel?'Cancel registration':'Confirm attendance',kind:'reply'},{id:'cancel',labelEs:'No hacer cambios',labelEn:'Do not change',kind:'reply'}]});}
 async function saveRsvp(req,state,cancel){const p=state.pending,event=await getDoc(tableNames.events,req.churchId,p.eventId);if(!event){state.pending=null;return reply('Ese evento ya no está disponible.','That event is no longer available.');}const id=`${event.id}__${req.identity.member.id}`,existing=await getDoc(tableNames.eventRegistrations,req.churchId,id),status=cancel?'cancelled':'registered',doc={...(existing||{}),id,eventId:event.id,memberId:req.identity.member.id,memberName:req.identity.member.fullName||'',status,partySize:Number(existing?.partySize||1),notes:existing?.notes||'',updatedAt:nowIso(),createdAt:existing?.createdAt||nowIso()};await putDoc(tableNames.eventRegistrations,req.churchId,id,doc,{eventId:event.id,memberId:doc.memberId,status});await appendHistory(req.churchId,{eventType:`event.registration.${status}`,memberId:doc.memberId,dateISO:event.dateISO||'',source:'chat-hub',details:{eventId:event.id}});state.pending=null;return reply(cancel?`Tu registro para “${p.eventName}” fue cancelado.`:`✅ Estás registrado para “${p.eventName}”.`,cancel?`Your registration for “${p.eventName}” was cancelled.`:`✅ You are registered for “${p.eventName}”.`,{actions:[{id:'navigate:events',labelEs:'Ver eventos',labelEn:'View events',kind:'navigate',target:'events'}]});}
 
+async function memberDeleteStart(req,message,state){
+  const member=await findMember(req,message);
+  if(!member)return reply('No pude identificar qué miembro quieres eliminar. Dime el nombre completo.','I could not identify which member you want to delete. Tell me the full name.');
+  if(member.churchAdministrator===true)return reply('El perfil del Administrador de la Iglesia no se puede eliminar.','The Church Administrator profile cannot be deleted.');
+  if(member.id===req.identity.member?.id)return reply('No puedes eliminar tu propio perfil mientras estás usando la aplicación.','You cannot delete your own profile while signed in.');
+  state.pending={type:'member.delete.confirm',memberId:member.id,memberName:member.fullName};
+  return reply(`Voy a eliminar el perfil y la cuenta de acceso de ${member.fullName}. El historial de auditoría se conservará y sus asignaciones futuras quedarán abiertas. ¿Confirmas?`,`I will delete ${member.fullName}'s member profile and sign-in account. Audit history will be preserved and future assignments will become open. Confirm?`,{pending:true,actions:[{id:'member-delete:confirm',kind:'reply',labelEs:'Sí, eliminar',labelEn:'Yes, delete',danger:true},{id:'cancel',kind:'reply',labelEs:'Cancelar',labelEn:'Cancel'}]});
+}
+async function memberDeleteConfirm(req,state){
+  const p=state.pending;if(p?.type!=='member.delete.confirm')return null;
+  const result=await deleteMemberProfile(req.churchId,p.memberId,{actorId:req.identity.member?.id||'',source:'chat-hub'});state.pending=null;
+  return reply(`✅ ${p.memberName} fue eliminado. ${result.unfilledAssignments} asignación(es) futura(s) quedaron abiertas.`,`✅ ${p.memberName} was deleted. ${result.unfilledAssignments} future assignment(s) were opened.`);
+}
+
 async function memberCreateStart(state){state.pending={type:'member.create.name'};return reply('Claro. ¿Cuál es el nombre completo del nuevo miembro?','Sure. What is the new member’s full name?',{pending:true});}
 async function memberCreatePending(req,message,state,action){
   const p=state.pending,msg=String(message||'').trim();if(isCancel(message)||action==='cancel'){state.pending=null;return reply('Cancelado. No creé el miembro.','Cancelled. I did not create the member.');}
@@ -556,6 +571,7 @@ async function handleAction(req,action,state){if(action==='cancel'){state.pendin
   if(action?.startsWith('task-complete:')){if(action==='task-complete:confirm'&&state.pending?.type==='task.complete.confirm'){const p=state.pending,row=await getDoc(tableNames.followUps,req.churchId,p.taskId);if(!row||row.assignedTo!==req.identity.member.id)return reply('No encontré esa tarea.','I could not find that task.');row.status='completed';row.updatedAt=nowIso();row.updatedBy=req.identity.member.id;await putDoc(tableNames.followUps,req.churchId,row.id,row,{status:row.status,assignedTo:row.assignedTo||'',dueDate:row.dueDate||''});state.pending=null;return reply(`✅ Tarea completada: ${row.title}.`,`✅ Task completed: ${row.title}.`);}const id=action.split(':')[1],row=await getDoc(tableNames.followUps,req.churchId,id);if(!row||row.assignedTo!==req.identity.member.id)return reply('No encontré esa tarea.','I could not find that task.');state.pending={type:'task.complete.confirm',taskId:row.id,title:row.title};return reply(`Voy a marcar “${row.title}” como completada. ¿Confirmas?`,`I will mark “${row.title}” complete. Confirm?`,{pending:true,actions:[{id:'task-complete:confirm',labelEs:'Sí, completar',labelEn:'Yes, complete',kind:'reply'},{id:'cancel',labelEs:'Cancelar',labelEn:'Cancel',kind:'reply'}]});}
   if(action?.startsWith('parent-verify:')){const id=action.split(':')[1],row=await getDoc(tableNames.childCheckIns,req.churchId,id);if(!row||row.memberId!==req.identity.member.id||!activeCheck(row))return reply('No encontré ese registro activo.','I could not find that active check-in.');state.pending=null;return issueParentVerification(req,row);}
   if(action?.startsWith('prayer-delete:')){const id=action.split(':')[1],row=await getDoc(tableNames.petitions,req.churchId,id);if(!row||row.memberId!==req.identity.member.id)return reply('Esa petición no está disponible para eliminar.','That prayer request is not available to delete.');state.pending={type:'prayer.delete.confirm',petitionId:id,text:row.text};return reply(`¿Eliminar permanentemente esta petición?\n“${row.text}”`,`Permanently delete this prayer request?\n“${row.text}”`,{pending:true,actions:[{id:'prayer:delete-confirm',labelEs:'Eliminar',labelEn:'Delete',kind:'reply',danger:true},{id:'cancel',labelEs:'Cancelar',labelEn:'Cancel',kind:'reply'}]});}
+  if(action==='member-delete:confirm'&&state.pending?.type==='member.delete.confirm')return memberDeleteConfirm(req,state);
   if(action==='prayer:delete-confirm'&&state.pending?.type==='prayer.delete.confirm'){const row=await getDoc(tableNames.petitions,req.churchId,state.pending.petitionId);if(!row||row.memberId!==req.identity.member.id){state.pending=null;return reply('Esa petición ya no está disponible para eliminar.','That prayer request is no longer available to delete.');}await deleteDoc(tableNames.petitions,req.churchId,row.id);await appendHistory(req.churchId,{eventType:'petition.deleted_by_owner',memberId:req.identity.member.id,source:'chat-hub',details:{petitionId:row.id}});state.pending=null;return reply('✅ Petición eliminada permanentemente.','✅ Prayer request permanently deleted.');}
   if(action?.startsWith('event-dismiss:')){if(action==='event-dismiss:confirm'&&state.pending?.type==='event.dismiss.confirm')return dismissEventById(req,state.pending.eventId,state,false);const id=action.split(':')[1];return dismissEventById(req,id,state,true);}
   if(action?.startsWith('task-cancel:')){if(action==='task-cancel:confirm'&&state.pending?.type==='task.cancel.confirm')return saveTaskAction(req,state,'cancel');const id=action.split(':')[1],row=await getDoc(tableNames.followUps,req.churchId,id);if(!row||row.assignedTo!==req.identity.member.id)return reply('No encontré esa tarea.','I could not find that task.');return taskActionConfirm(req,row,state,'cancel');}
@@ -597,6 +613,7 @@ export async function executeIntent(req,{intent,message,attachment,state,action,
   if(state.pending?.type?.startsWith('member.create.'))return memberCreatePending(req,message,state,action);
   if(state.pending?.type?.startsWith('member.eligibility.'))return memberEligibilityPending(req,message,state,action);
   if(state.pending?.type?.startsWith('prayer.delete.')){if(isYes(message)&&state.pending.type==='prayer.delete.confirm')return handleAction(req,'prayer:delete-confirm',state);return prayerDeleteStart(req,state);}
+  if(state.pending?.type==='member.delete.confirm'&&isYes(message))return memberDeleteConfirm(req,state);
   if(state.pending?.type==='schedule.generate.confirm'&&isYes(message))return handleAction(req,'schedule:generate-confirm',state);
   if(state.pending?.type==='module.toggle.confirm'&&isYes(message))return handleAction(req,'module:toggle-confirm',state);
   if(state.pending?.type==='rsvp.register.confirm'&&isYes(message))return handleAction(req,'rsvp:register-confirm',state);
@@ -657,6 +674,7 @@ export async function executeIntent(req,{intent,message,attachment,state,action,
     case 'admin.pendingSongs': return pendingSongs(req);
     case 'admin.memberSearch': return memberSearch(req,message);
     case 'admin.memberCreate': return memberCreateStart(state);
+    case 'admin.memberDelete': return memberDeleteStart(req,message,state);
     case 'admin.memberEligibilityQuery': return memberEligibilityQuery(req,message);
     case 'admin.memberEligibilityUpdate': return memberEligibilityStart(req,message,state);
     case 'admin.bulletinUpload': return bulletinStart(req,attachment,state);

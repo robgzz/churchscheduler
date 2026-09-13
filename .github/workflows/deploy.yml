@@ -1,4 +1,4 @@
-name: Deploy Westbury Church Hub V6.0.0
+name: Deploy Westbury Church Hub V6.1.0
 
 on:
   push:
@@ -60,6 +60,29 @@ jobs:
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
+      - name: Discover Westbury ACS email configuration
+        shell: bash
+        run: |
+          APP_NAME="${{ secrets.AZURE_CONTAINER_APP_NAME }}"
+          PREFIX="${APP_NAME%-web}"
+          ACS_NAME="${PREFIX}-acs"
+          ACS_HOST=$(az resource show \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "$ACS_NAME" \
+            --resource-type "Microsoft.Communication/communicationServices" \
+            --query properties.hostName -o tsv 2>/dev/null || true)
+          if [ -n "$ACS_HOST" ]; then
+            echo "ACS_ENDPOINT=https://$ACS_HOST" >> "$GITHUB_ENV"
+            echo "ACS_EMAIL_ENABLED=true" >> "$GITHUB_ENV"
+            echo "ACS_EMAIL_SENDER=WestburyChurchofChrist@exonuvia.com" >> "$GITHUB_ENV"
+            echo "ACS discovered: $ACS_NAME"
+          else
+            echo "ACS_ENDPOINT=" >> "$GITHUB_ENV"
+            echo "ACS_EMAIL_ENABLED=false" >> "$GITHUB_ENV"
+            echo "ACS_EMAIL_SENDER=" >> "$GITHUB_ENV"
+            echo "WARNING: ACS resource $ACS_NAME was not found; email remains disabled."
+          fi
+
       - name: Deploy web app
         run: |
           FQDN=$(az containerapp show \
@@ -76,7 +99,7 @@ jobs:
             --memory 2.0Gi \
             --scale-rule-name http-requests \
             --scale-rule-http-concurrency 15 \
-            --set-env-vars "PUBLIC_APP_URL=https://$FQDN" \
+            --set-env-vars "PUBLIC_APP_URL=https://$FQDN" "ACS_ENDPOINT=$ACS_ENDPOINT" "ACS_EMAIL_SENDER=$ACS_EMAIL_SENDER" "ACS_EMAIL_ENABLED=$ACS_EMAIL_ENABLED" \
             --output none
 
       - name: Deploy scheduler job image
@@ -86,6 +109,7 @@ jobs:
             --name "${{ secrets.AZURE_CONTAINER_JOB_NAME }}" \
             --image "$IMAGE" \
             --cron-expression "*/15 * * * *" \
+            --set-env-vars "ACS_ENDPOINT=$ACS_ENDPOINT" "ACS_EMAIL_SENDER=$ACS_EMAIL_SENDER" "ACS_EMAIL_ENABLED=$ACS_EMAIL_ENABLED" \
             --output none
 
       - name: Health check

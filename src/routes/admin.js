@@ -2,7 +2,7 @@ import express from 'express';
 import crypto from 'node:crypto';
 import { requireAdmin } from '../auth/middleware.js';
 import { tableNames, config } from '../config.js';
-import { listDocs, getDoc, putDoc, deleteDoc, uploadBuffer, nowIso } from '../storage/repository.js';
+import { listDocs, getDoc, putDoc, deleteDoc, uploadBuffer, deleteBlob, nowIso } from '../storage/repository.js';
 import { hashPassword } from '../auth/password.js';
 import { provisionMemberAccount, emailInitialCredentials } from '../services/accountProvisioning.js';
 import { destroyAllUserSessions } from '../auth/sessions.js';
@@ -17,6 +17,7 @@ import { syncProgramStatus } from '../communications/programAdmin.js';
 import { reportCatalog, buildReport, reportCsv, reportXlsx, reportPdf } from '../services/reporting.js';
 import { enqueue } from '../communications/notifications.js';
 import { requireModule } from '../modules/registry.js';
+import { deleteMemberProfile } from '../services/memberDeletion.js';
 
 function fileSignatureOk(contentType,buf){
   if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
@@ -150,6 +151,11 @@ adminRouter.put('/people/:id',async(req,res)=>{
   if(doc.username){const user=await getDoc(tableNames.users,req.churchId,doc.username);if(user){user.active=doc.active!==false;user.groups=doc.groups||user.groups||[];await putDoc(tableNames.users,req.churchId,user.username,user,{memberId:doc.id,active:user.active,adminAccess:user.adminAccess===true,churchAdministrator:user.churchAdministrator===true});if(!user.active)await destroyAllUserSessions(req.churchId,user.username);}}
   res.json(doc);
 });
+adminRouter.delete('/people/:id',async(req,res,next)=>{try{
+  const result=await deleteMemberProfile(req.churchId,req.params.id,{actorId:req.identity?.member?.id||'',source:'admin'});
+  await securityEvent(req,'member_profile_deleted',{memberId:result.member.id,fullName:result.member.fullName||'',username:result.member.username||'',unfilledAssignments:result.unfilledAssignments,cancelledTasks:result.cancelledTasks});
+  res.json({ok:true,deletedMemberId:result.deletedMemberId,unfilledAssignments:result.unfilledAssignments,cancelledTasks:result.cancelledTasks});
+}catch(e){next(e);}});
 adminRouter.post('/people/:id/provision-account',async(req,res)=>{
   const member=await getDoc(tableNames.members,req.churchId,req.params.id); if(!member) return res.status(404).json({error:'Member not found'});
   const requesterIsOwner=req.identity?.member?.churchAdministrator===true || req.identity?.user?.churchAdministrator===true;
@@ -238,21 +244,39 @@ adminRouter.put('/templates/:id',async(req,res)=>{
 
 adminRouter.use('/content',requireModule('publications'));
 adminRouter.get('/content',async(req,res)=>res.json(await listDocs(tableNames.content,req.churchId,{max:500})));
-adminRouter.post('/content',async(req,res)=>{
-  const id=req.body.id || `content_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-  const doc={id,kind:String(req.body.kind||'announcement'),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),body:String(req.body.bodyEs||req.body.body||req.body.bodyEn||'').trim(),bodyEs:String(req.body.bodyEs||req.body.body||'').trim(),bodyEn:String(req.body.bodyEn||req.body.body||'').trim(),address:String(req.body.address||'').trim(),eventDate:String(req.body.eventDate||req.body.dateISO||'').trim(),startTime:String(req.body.startTime||'').trim().slice(0,5),category:String(req.body.category||'').trim().slice(0,80),tags:Array.isArray(req.body.tags)?req.body.tags.map(x=>String(x).trim()).filter(Boolean).slice(0,20):[],published:req.body.published!==false,publishedAt:nowIso(),createdAt:nowIso()};
-  if(req.body.file?.base64){
-    const contentType=String(req.body.file.contentType||'application/octet-stream').toLowerCase();
-    if(!['application/pdf','image/jpeg','image/png'].includes(contentType)) return res.status(400).json({error:'Attachments must be PDF, JPG/JPEG, or PNG.',code:'INVALID_ATTACHMENT_TYPE'});
-    const raw=String(req.body.file.base64).replace(/^data:[^;]+;base64,/, ''); const buf=Buffer.from(raw,'base64');
-    if(buf.length>8*1024*1024) return res.status(413).json({error:'Attachment must be 8 MB or smaller.',code:'ATTACHMENT_TOO_LARGE'});
-    if(!fileSignatureOk(contentType,buf)) return res.status(400).json({error:'Attachment contents do not match the allowed PDF/JPG/PNG type.',code:'INVALID_ATTACHMENT_CONTENT'});
-    const safeName=String(req.body.file.fileName||'attachment').replace(/[^a-zA-Z0-9._-]/g,'_'); const blobName=`${req.churchId}/${id}/${safeName}`;
-    doc.attachment={...(await uploadBuffer(config.attachmentsContainer,blobName,buf,contentType)),fileName:safeName};
+async function contentAttachmentFromRequest(req,id,existingAttachment=null){
+  if(req.body.removeAttachment===true){
+    if(existingAttachment?.blobName)await deleteBlob(existingAttachment.container||config.attachmentsContainer,existingAttachment.blobName).catch(()=>{});
+    return null;
   }
-  await putDoc(tableNames.content,req.churchId,id,doc,{kind:doc.kind,published:doc.published,publishedAt:doc.publishedAt,eventDate:doc.eventDate||''}); if(doc.kind==='announcement'&&doc.published!==false) await enqueueAnnouncement(req.churchId,doc); res.status(201).json(doc);
-});
-adminRouter.delete('/content/:id',async(req,res)=>{await deleteDoc(tableNames.content,req.churchId,req.params.id);res.json({ok:true});});
+  if(!req.body.file?.base64)return existingAttachment||null;
+  const contentType=String(req.body.file.contentType||'application/octet-stream').toLowerCase();
+  if(!['application/pdf','image/jpeg','image/png'].includes(contentType))throw Object.assign(new Error('Attachments must be PDF, JPG/JPEG, or PNG.'),{statusCode:400,code:'INVALID_ATTACHMENT_TYPE'});
+  const raw=String(req.body.file.base64).replace(/^data:[^;]+;base64,/, '');const buf=Buffer.from(raw,'base64');
+  if(buf.length>8*1024*1024)throw Object.assign(new Error('Attachment must be 8 MB or smaller.'),{statusCode:413,code:'ATTACHMENT_TOO_LARGE'});
+  if(!fileSignatureOk(contentType,buf))throw Object.assign(new Error('Attachment contents do not match the allowed PDF/JPG/PNG type.'),{statusCode:400,code:'INVALID_ATTACHMENT_CONTENT'});
+  const safeName=String(req.body.file.fileName||'attachment').replace(/[^a-zA-Z0-9._-]/g,'_');const blobName=`${req.churchId}/${id}/${Date.now()}-${safeName}`;
+  const attachment={...(await uploadBuffer(config.attachmentsContainer,blobName,buf,contentType)),fileName:safeName};
+  if(existingAttachment?.blobName)await deleteBlob(existingAttachment.container||config.attachmentsContainer,existingAttachment.blobName).catch(()=>{});
+  return attachment;
+}
+function contentDocFromRequest(body,id,old=null){
+  const createdAt=old?.createdAt||nowIso(),published=body.published!==false;
+  return {...(old||{}),id,kind:String(body.kind??old?.kind??'announcement'),title:String(body.titleEs??body.title??body.titleEn??old?.titleEs??old?.title??'').trim(),titleEs:String(body.titleEs??body.title??old?.titleEs??old?.title??'').trim(),titleEn:String(body.titleEn??body.title??old?.titleEn??'').trim(),body:String(body.bodyEs??body.body??body.bodyEn??old?.bodyEs??old?.body??'').trim(),bodyEs:String(body.bodyEs??body.body??old?.bodyEs??old?.body??'').trim(),bodyEn:String(body.bodyEn??body.body??old?.bodyEn??'').trim(),address:String(body.address??old?.address??'').trim(),eventDate:String(body.eventDate??body.dateISO??old?.eventDate??'').trim(),startTime:String(body.startTime??old?.startTime??'').trim().slice(0,5),category:String(body.category??old?.category??'').trim().slice(0,80),tags:Array.isArray(body.tags)?body.tags.map(x=>String(x).trim()).filter(Boolean).slice(0,20):(old?.tags||[]),published,publishedAt:old?.publishedAt||nowIso(),createdAt,updatedAt:old?nowIso():undefined};
+}
+adminRouter.post('/content',async(req,res,next)=>{try{
+  const id=req.body.id||`content_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;const doc=contentDocFromRequest(req.body,id);doc.attachment=await contentAttachmentFromRequest(req,id,null);if(!doc.attachment)delete doc.attachment;
+  await putDoc(tableNames.content,req.churchId,id,doc,{kind:doc.kind,published:doc.published,publishedAt:doc.publishedAt,eventDate:doc.eventDate||''});
+  await appendHistory(req.churchId,{eventType:'content.created',memberId:req.identity?.member?.id||'',source:'admin',details:{contentId:id,kind:doc.kind,title:doc.title}});
+  if(doc.kind==='announcement'&&doc.published!==false)await enqueueAnnouncement(req.churchId,doc);res.status(201).json(doc);
+}catch(e){next(e);}});
+adminRouter.put('/content/:id',async(req,res,next)=>{try{
+  const old=await getDoc(tableNames.content,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Content not found'});const doc=contentDocFromRequest(req.body,old.id,old);const attachment=await contentAttachmentFromRequest(req,old.id,old.attachment||null);if(attachment)doc.attachment=attachment;else delete doc.attachment;
+  await putDoc(tableNames.content,req.churchId,doc.id,doc,{kind:doc.kind,published:doc.published,publishedAt:doc.publishedAt,eventDate:doc.eventDate||''});
+  await appendHistory(req.churchId,{eventType:'content.updated',memberId:req.identity?.member?.id||'',source:'admin',details:{contentId:doc.id,kind:doc.kind,title:doc.title}});
+  if(req.body.notifyMembers===true&&doc.kind==='announcement'&&doc.published!==false)await enqueueAnnouncement(req.churchId,doc);res.json(doc);
+}catch(e){next(e);}});
+adminRouter.delete('/content/:id',async(req,res,next)=>{try{const old=await getDoc(tableNames.content,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Content not found'});if(old.attachment?.blobName)await deleteBlob(old.attachment.container||config.attachmentsContainer,old.attachment.blobName).catch(()=>{});await deleteDoc(tableNames.content,req.churchId,req.params.id);await appendHistory(req.churchId,{eventType:'content.deleted',memberId:req.identity?.member?.id||'',source:'admin',details:{contentId:old.id,kind:old.kind,title:old.title}});res.json({ok:true});}catch(e){next(e);}});
 
 adminRouter.get('/petitions',async(req,res)=>res.json(await listDocs(tableNames.petitions,req.churchId,{max:500})));
 adminRouter.use('/visitors',requireModule('visitors'));

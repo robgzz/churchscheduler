@@ -56,8 +56,8 @@ test('V4.2 announcement editor captures activity date and time',()=>{
   const admin=read('public/assets/admin.js'),routes=read('src/routes/admin.js');
   assert.match(admin,/name="eventDate"/);
   assert.match(admin,/name="startTime"/);
-  assert.match(routes,/eventDate:String\(req\.body\.eventDate/);
-  assert.match(routes,/startTime:String\(req\.body\.startTime/);
+  assert.match(routes,/(?:eventDate:String\((?:req\.body|body)\.eventDate|contentDocFromRequest\(body)/);
+  assert.match(routes,/(?:startTime:String\((?:req\.body|body)\.startTime|contentDocFromRequest\(body)/);
 });
 
 test('V4.2 voice input infers question punctuation after speech recognition',()=>{
