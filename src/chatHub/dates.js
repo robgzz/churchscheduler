@@ -12,7 +12,9 @@ export function parseDateFromText(text,{timezone='America/Chicago',todayISO=chur
   if(/\bhoy\b|\btoday\b/.test(s))return todayISO;
   if(/\bmanana\b|\btomorrow\b/.test(s)){today.setUTCDate(today.getUTCDate()+1);return today.toISOString().slice(0,10);}
   const target=/miercoles|wednesday/.test(s)?3:/domingo|sunday/.test(s)?0:null;
-  if(target!==null){const day=today.getUTCDay(),delta=(target-day+7)%7||(/proxim|next|siguiente/.test(s)?7:0);today.setUTCDate(today.getUTCDate()+delta);return today.toISOString().slice(0,10);}
+  if(target!==null){const day=today.getUTCDay();
+    if(/pasado|pasada|anterior|last|previous/.test(s)){let delta=(day-target+7)%7;if(delta===0)delta=7;today.setUTCDate(today.getUTCDate()-delta);return today.toISOString().slice(0,10);}
+    const delta=(target-day+7)%7||(/proxim|next|siguiente/.test(s)?7:0);today.setUTCDate(today.getUTCDate()+delta);return today.toISOString().slice(0,10);}
   return '';
 }
 export function parseTimeFromText(text){const s=fold(text);let m=s.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);if(m){let h=Number(m[1]),min=Number(m[2]||0);if(m[3]==='pm'&&h<12)h+=12;if(m[3]==='am'&&h===12)h=0;return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;}m=s.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);return m?`${String(Number(m[1])).padStart(2,'0')}:${m[2]}`:'';}

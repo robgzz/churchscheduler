@@ -11,7 +11,8 @@ export function assistancePlan(raw,state={},actor={}){
   if(active?.procedureId==='songs.select'&&(justSongs||/^(elige|escoge|selecciona|choose|select)( cantos| songs)?$/.test(text)))return {intent:'songs.select',procedureId:'songs.select',kind:'continue',score:1};
   const wantsSongs=/(canto|cantos|cancion|canciones|song|songs)/.test(text);
   const songSelect=wantsSongs&&/(escog|elegi|elige|seleccion|pon|poner|choose|select|pick|use|usar)/.test(text);
-  if(songSelect&&!HOW.test(text)&&!HELP.test(text))return {intent:'songs.select',procedureId:'songs.select',kind:'execute',score:.98};
+  const songQuery=/^(quien|quienes|who|cual|cuales|which|que|what)\b/.test(text)||/\b(falta|faltan|pendiente|pending|missing|mis cantos|my songs|ya estan|already|escogi|elegi|seleccione|i chose|i selected)\b/.test(text);
+  if(songSelect&&!songQuery&&!HOW.test(text)&&!HELP.test(text))return {intent:'songs.select',procedureId:'songs.select',kind:'execute',score:.98};
   const programAdmin=/(admin(?:istrador)? responsable|administrador del programa|program admin|responsible admin)/.test(text);
   if(programAdmin&&!HOW.test(text)&&!HELP.test(text)&&!EXPLAIN.test(text)&&/(pon|poner|cambia|cambiar|marca|marcar|asigna|asignar|set|change|make|assign)/.test(text))return {intent:'admin.programAdminSet',procedureId:'program_admin.change',kind:'execute',score:.99};
   if(HOW.test(text)||HELP.test(text)||EXPLAIN.test(text)){

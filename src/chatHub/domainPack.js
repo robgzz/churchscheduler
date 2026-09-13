@@ -1,10 +1,11 @@
 import { parseDateFromText, parseDateRangeFromText } from './dates.js';
 import { Operation, SpeechAct } from '../dce/frame.js';
+import { roleFromText, requestedProjection, subjectFromText } from './ontology.js';
 
 const P=(domain,resource,patterns,weight=1)=>({domain,resource,patterns,weight});
 const patterns=[
  P('worship','assignment',['asignacion','asignaciones','me toca','sirvo','servir','programado','assigned','assignment','assignments','serve']),
- P('worship','program',['programa','predica','predicar','sermon','meditacion','cantos','cantar','cantor','clase','maestro','teacher','teaching','vigilancia','security','comunion','scripture','oracion','who is preaching','who has']),
+ P('worship','program',['programa','predica','predicar','sermon','meditacion','cantos','cantar','cantor','clase','maestro','teacher','teaching','vigilancia','security','comunion','cena','oro','orar','scripture','oracion','who is preaching','who has']),
  P('worship','participation',['participado','participacion','participo','sirvio','serve','served','participated','participation']),
  P('worship','replacement',['reemplazo','reemplazar','cubrir','cubra','replacement','replace','cover me']),
  P('worship','availability',['ausencia','disponibilidad','no estare','no voy a estar','unavailable','availability','away']),
@@ -30,6 +31,9 @@ const patterns=[
 function scorePattern(text,p){let s=0,e=[];for(const x of p.patterns){if(text.includes(x)){s+=x.includes(' ')?4:2;e.push(`${p.domain}:${x}`);}}return {s:s*p.weight,e};}
 export function detectDomain(text,{actor}={}){
   const admin=Boolean(actor?.isAdmin);
+  if(/\b(quien|quienes|who)\b/.test(text)&&/\b(falta|faltan|pendiente|pendientes|missing|still needs|has not|hasnt|no ha|no han)\b/.test(text)&&/\b(canto|cantos|song|songs)\b/.test(text))return {domain:'songs',resource:'missing_selection',score:30,evidence:['songs:missing-selection'],second:null};
+  if((/\b(mi|mis|my)\b/.test(text)||/\b(escogi|elegi|seleccione|i chose|i selected)\b/.test(text))&&/\b(canto|cantos|song|songs)\b/.test(text)&&/\b(ya|elegid|escogid|seleccionad|selected|chosen|pick|cuales|which|what|escogi|elegi|seleccione)\b/.test(text))return {domain:'songs',resource:/\b(ya estan|ya|elegidos|escogidos|seleccionados|are selected|already)\b/.test(text)?'selection_status':'my_selection',score:28,evidence:['songs:self-selection'],second:null};
+  if(/\b(asignacion|asignaciones|assignment|assignments)\b/.test(text)&&/\b(mi|mis|me|tengo|my|mine|i have)\b/.test(text))return {domain:'worship',resource:'assignment',score:26,evidence:['worship:self-assignments'],second:null};
   const memberEligibilityChange=admin&&/\b(cambia|cambiar|modifica|modificar|edita|editar|actualiza|actualizar|pon|poner|quita|quitar|agrega|agregar|asigna|asignar|remueve|remover|change|update|edit|add|remove|assign|eligible|ineligible|puede servir|no puede servir|no debe servir|can serve|cannot serve|can sing|no canta)\b/.test(text)&&/\b(miembro|member|ministerio|ministerios|ministry|ministries|cantos?|songs?|clase|class|meditacion|sermon|peticiones|comunion|ofrenda|vigilancia|seguridad|bienvenida|lectura|oracion|prayer|worship|adoracion|miercoles|wednesday|domingo|sunday)\b/.test(text);
   if(memberEligibilityChange)return {domain:'members',resource:'eligibility',score:20,evidence:['members:eligibility-change'],second:null};
   const memberEligibilityQuery=admin&&(/\b(que ministerio|que ministerios|en que ministerio|en que ministerios|ministerio de|ministerios de|what ministry|what ministries|ministry eligibility|elegibilidad ministerial)\b/.test(text)||/\b(puede|can)\b.*\b(servir|cantar|serve|sing)\b/.test(text));
@@ -43,13 +47,10 @@ export function detectDomain(text,{actor}={}){
   candidates.sort((a,b)=>b.score-a.score);return {...candidates[0],second:candidates[1]||null};
 }
 
-const roles=[
- ['meditation',/\b(predic\w*|sermon|meditacion|mensaje|preach\w*|sermon)\b/],['songs',/\b(cantos?|canciones?|cantar|canta|cantor(?:es)?|songs?|sing(?:ing)?|singer)\b/],['security',/\b(vigilancia|seguridad|security)\b/],['communion',/\b(comunion|ofrenda|communion|offering)\b/],['scripture',/\b(escritura|scripture)\b/],['welcome',/\b(bienvenida|welcome)\b/],['class_teacher',/\b(clase|maestr[oa]|profesor(?:a)?|teacher|teaching|class)\b/],['prayer',/\b(oracion|prayer)\b/]
-];
-function roleFrom(text){for(const [id,re] of roles)if(re.test(text))return id;return '';}
-function serviceFrom(text,role){if(/\b(miercoles|wednesday)\b/.test(text))return 'wednesday_class';if(/\b(clase dominical|sunday class)\b/.test(text))return 'sunday_class';if(/\b(adoracion|worship|culto)\b/.test(text))return 'sunday_worship';if(/\b(domingo|sunday)\b/.test(text)&&role==='class_teacher')return 'sunday_class';if(/\b(domingo|sunday)\b/.test(text)&&['meditation','communion','security'].includes(role))return 'sunday_worship';if(/\b(domingo|sunday)\b/.test(text))return 'sunday';return '';}
-function projectionFrom(text){if(/\b(quien|quienes|who)\b/.test(text))return ['person'];if(/\b(cuando|when)\b/.test(text))return ['date','time'];if(/\b(donde|where)\b/.test(text))return ['location'];if(/\b(cuantos|cuantas|how many)\b/.test(text))return ['count'];return [];}
-function subjectFrom(text){if(/\b(mi|mis|me|yo|estoy|soy|my|mine|i|i am|am i)\b/.test(text))return {scope:'self',type:'member',value:''};return {scope:'any',type:'',value:''};}
+function roleFrom(text){return roleFromText(text);}
+function serviceFrom(text,role){if(/\b(miercoles|wednesday)\b/.test(text))return 'wednesday_class';if(/\b(clase dominical|sunday class)\b/.test(text))return 'sunday_class';if(/\b(adoracion|worship|culto)\b/.test(text))return 'sunday_worship';if(/\b(domingo|sunday)\b/.test(text)&&role==='class_teacher')return 'sunday_class';if(/\b(domingo|sunday)\b/.test(text)&&['meditation','communion','security','closing'].includes(role))return 'sunday_worship';if(/\b(domingo|sunday)\b/.test(text))return 'sunday';return '';}
+function projectionFrom(text){return requestedProjection(text);}
+function subjectFrom(text){return subjectFromText(text);}
 function occurrencesFrom(text){const m=text.match(/\b(proxim(?:os|as)?|next)\s+(\d+|dos|tres|cuatro|five|two|three|four)\b/);if(!m)return null;const map={dos:2,tres:3,cuatro:4,two:2,three:3,four:4,five:5};return Number(m[2])||map[m[2]]||null;}
 export function extractSlots(text,{frame}){const role=roleFrom(text),service=serviceFrom(text,role),projection=projectionFrom(text),subject=subjectFrom(text),timeRange=parseDateRangeFromText(text),one=parseDateFromText(text);const count=occurrencesFrom(text);const time=count?{mode:'next_occurrences',count,weekday:service==='wednesday_class'?3:service.startsWith('sunday')?0:null}:timeRange?{mode:'range',...timeRange}:one?{mode:'date',date:one}:null;const filters={};if(role)filters.role=role;if(service)filters.serviceType=service;return {subject,filters,time,projection,quantifier:count,evidence:[role&&`role:${role}`,service&&`service:${service}`,time&&`time:${time.mode}`].filter(Boolean)};}
 
@@ -63,7 +64,12 @@ export function resolveFrame(frame,{text,actor}){const admin=Boolean(actor?.isAd
     case 'services': intent='services.query';break;
     case 'profile': intent='profile.mine';break;
     case 'notifications': intent='notifications.mine';break;
-    case 'songs': intent=frame.operation===Operation.HISTORY?'songs.history':'songs.search';break;
+    case 'songs':
+      if(admin&&frame.resource==='missing_selection')intent='admin.pendingSongs';
+      else if(frame.resource==='selection_status')intent='songs.status';
+      else if(frame.resource==='my_selection')intent='songs.mine';
+      else if(frame.operation===Operation.HISTORY)intent='songs.history';
+      else intent='songs.search';break;
     case 'worship':
       if(frame.resource==='replacement')intent='replacement.request';else if(frame.resource==='availability')intent='availability.add';else if(frame.resource==='participation')intent='program.participation';else if(frame.resource==='assignment'&&frame.subject.scope==='self')intent='assignments.mine';else intent='program.query';break;
     case 'publications':

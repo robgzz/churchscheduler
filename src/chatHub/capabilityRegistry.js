@@ -3,7 +3,7 @@
 const C=(module,risk='read')=>({module,risk});
 export const chatCapabilityRegistry=Object.freeze({
   'help':C(null),'procedure.help':C(null),'diagnostic.why':C(null),'songs.select':C('worship','self-write'),'admin.programAdminSet':C('worship','admin-write'),'navigation.open':C(null),'hub.upcomingSummary':C(null),'services.query':C('worship'),'profile.mine':C(null),'notifications.mine':C(null),
-  'assignments.mine':C('worship'),'program.query':C('worship'),'program.participation':C('worship'),'replacement.request':C('worship','self-write'),'availability.add':C('worship','self-write'),'songs.search':C('worship'),'songs.history':C('worship'),
+  'assignments.mine':C('worship'),'program.query':C('worship'),'program.participation':C('worship'),'replacement.request':C('worship','self-write'),'availability.add':C('worship','self-write'),'songs.search':C('worship'),'songs.mine':C('worship'),'songs.status':C('worship'),'songs.history':C('worship'),
   'bulletins.latest':C('publications'),'announcements.count':C('publications'),'announcements.list':C('publications'),'announcements.query':C('publications'),
   'events.query':C('events'),'events.myRsvp':C('events'),'events.register':C('events','self-write'),'events.cancelRsvp':C('events','self-write'),'events.dismiss':C('events','self-write'),
   'tasks.mine':C('followups'),'tasks.complete':C('followups','self-write'),'tasks.cancel':C('followups','self-write'),'tasks.dismiss':C('followups','self-write'),

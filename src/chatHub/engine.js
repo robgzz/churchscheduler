@@ -13,15 +13,29 @@ import { authorize, isAdmin, isOwner } from './policy.js';
 import { getChatState, saveChatState } from './session.js';
 import { executeIntent } from './handlers.js';
 import { assistancePlan } from './assistancePlanner.js';
+import { arbitrateTurn, suspendGoal, resumeSuspendedGoal } from './goalArbitrator.js';
+import { ensureDiscourse, setExpectedResponse, clearExpectedResponse } from '../dce/core/discourse.js';
+import { churchCapabilities } from './domain/capabilities.js';
 
 // Module and risk metadata live in capabilityRegistry.js; execution remains service-driven.
+function syncExpectedResponse(state){
+  ensureDiscourse(state);const p=state.pending?.type||'';
+  if(!p){clearExpectedResponse(state);return;}
+  if(p.includes('confirm'))return setExpectedResponse(state,{type:'boolean_confirmation'});
+  if(p.startsWith('program_admin'))return setExpectedResponse(state,{type:'entity_reference',entityType:'administrator',allowedSet:(state.pending?.options||[]).map(x=>x.id||x.memberId).filter(Boolean)});
+  if(p.startsWith('songs.select'))return setExpectedResponse(state,{type:p.includes('assignment')?'service_occurrence':'song_selection'});
+  if(p.startsWith('member.eligibility'))return setExpectedResponse(state,{type:'domain_parameter',domain:'members'});
+  if(p.startsWith('event.'))return setExpectedResponse(state,{type:'domain_parameter',domain:'events'});
+  if(p.startsWith('task.'))return setExpectedResponse(state,{type:'domain_parameter',domain:'tasks'});
+  setExpectedResponse(state,{type:'domain_parameter'});
+}
 
 const byId=new Map(intentCatalog.map(x=>[x.id,x]));
 function local(req,es,en){return req.locale==='en'?en:es;}
 function intentLabel(id,locale='es'){
   const labels={
     'navigation.open':['abrir una sección','open a section'],'hub.upcomingSummary':['ver el resumen de esta semana','see this week’s summary'],'services.query':['consultar horarios de servicios','check service times'],'profile.mine':['consultar tu perfil','view your profile'],'notifications.mine':['ver tus notificaciones','view your notifications'],'assignments.mine':['tus asignaciones','your assignments'],'program.query':['consultar el programa','query the worship program'],'program.participation':['consultar participación de un miembro','check member participation'],'replacement.request':['solicitar un reemplazo','request a replacement'],
-    'availability.add':['registrar una ausencia','add unavailability'],'songs.search':['buscar un canto','search songs'],'songs.history':['ver tu historial de cantos','view your song history'],
+    'availability.add':['registrar una ausencia','add unavailability'],'songs.search':['buscar un canto','search songs'],'songs.mine':['ver tus cantos seleccionados','view your selected songs'],'songs.status':['revisar si tus cantos están elegidos','check your song-selection status'],'songs.history':['ver tu historial de cantos','view your song history'],
     'bulletins.latest':['ver el último boletín','view the latest bulletin'],'announcements.count':['contar anuncios','count announcements'],'announcements.list':['listar anuncios','list announcements'],'announcements.query':['preguntar por anuncios','ask about announcements'],'events.query':['consultar eventos','check events'],'events.myRsvp':['consultar tus RSVP','check your RSVPs'],'events.register':['registrarte a un evento','register for an event'],'events.cancelRsvp':['cancelar tu RSVP','cancel your RSVP'],'events.dismiss':['quitar un evento de tu pantalla','remove an event from your screen'],'tasks.mine':['ver tus tareas','view your tasks'],'tasks.complete':['completar una tarea','complete a task'],'tasks.cancel':['cancelar una tarea','cancel a task'],'tasks.dismiss':['quitar una tarea de tu pantalla','remove a task from your screen'],
     'prayer.list':['ver peticiones públicas','view public prayer requests'],'prayer.mine':['ver tus peticiones','view your prayer requests'],'prayer.create':['crear una petición','create a prayer request'],'prayer.delete':['eliminar tu petición','delete your prayer request'],'prayer.deleteExpired':['eliminar tu petición','delete your prayer request'],'children.pickupCode':['recuperar tu código de recogida','retrieve your pickup code'],'children.parentVerification':['generar un código temporal de verificación','generate a one-time parent verification code'],
     'children.status':['consultar Cuidado de Niños','check Children Care'],'children.workerStatus':['consultar tu área de cuidado','check your caregiver area'],'children.pickupRequest':['solicitar recogida','request pickup'],
@@ -35,9 +49,13 @@ async function logUnknown(req,normalized,highlights){
   await putDoc(tableNames.chatUnknowns,req.churchId,id,{id,memberId:req.identity?.member?.id||'',normalizedText:safeText,messageHash:crypto.createHash('sha256').update(text).digest('hex'),sensitiveRedacted:sensitive,highlights:highlights.map(x=>x.concept),createdAt:nowIso(),locale:req.locale||'es'},{memberId:req.identity?.member?.id||'',createdAt:nowIso()});
 }
 export async function processChat(req,{message='',attachment=null,action='',screenContext={}}={}){
-  const state=await getChatState(req.churchId,req.identity);state.context={...(state.context||{}),screenContext:screenContext||{}};
+  const state=await getChatState(req.churchId,req.identity);state.context={...(state.context||{}),screenContext:screenContext||{}};ensureDiscourse(state);
   const normalized=normalizeInput(message||'');
   const actor={isAdmin:isAdmin(req.identity),isOwner:isOwner(req.identity),memberId:req.identity?.member?.id||''};
+  const arbitration=!action?arbitrateTurn(normalized,state):{mode:'action',score:1};
+  if(arbitration.mode==='new_goal')suspendGoal(state,'explicit_new_goal');
+  if(arbitration.mode==='resume')resumeSuspendedGoal(state);
+  state.context.turnArbitration={...arbitration,at:nowIso()};
   const assist=!action&&!state.pending?assistancePlan(normalized.normalized,state,actor):null;
   if(assist?.procedureId)state.context.procedureHint={id:assist.procedureId,kind:assist.kind,at:nowIso()};
   let resolution={id:state.lastIntent||'unknown',confidence:1,ambiguous:false,item:byId.get(state.lastIntent)};
@@ -80,6 +98,8 @@ export async function processChat(req,{message='',attachment=null,action='',scre
   state.lastIntent=intent;
   if(frame&&frame.intent!=='unknown')state.context.lastFrame=frame;
   if(result?.data)state.context.lastResultSummary={intent,at:nowIso(),keys:Object.keys(result.data).slice(0,12)};
+  syncExpectedResponse(state);
   await saveChatState(req.churchId,state);
-  return {...result,reply:req.locale==='en'?(result.replyEn||result.replyEs):(result.replyEs||result.replyEn),intent,confidence:resolution.confidence,understanding:frame?{speechAct:frame.speechAct,operation:frame.operation,domain:frame.domain,resource:frame.resource,filters:frame.filters,time:frame.time,projection:frame.projection,plan:planFrame(frame)}:undefined};
+  const cap=churchCapabilities.get(intent);
+  return {...result,reply:req.locale==='en'?(result.replyEn||result.replyEs):(result.replyEs||result.replyEn),intent,confidence:resolution.confidence,understanding:frame?{speechAct:frame.speechAct,operation:frame.operation,domain:frame.domain,resource:frame.resource,predicate:frame.predicate,roles:frame.roles,scope:frame.scope,resultType:frame.resultType,filters:frame.filters,time:frame.time,projection:frame.projection,capability:cap?{id:cap.id,risk:cap.risk,confirm:cap.confirm}:null,plan:planFrame(frame),arbitration}:undefined};
 }

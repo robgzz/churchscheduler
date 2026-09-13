@@ -1,6 +1,6 @@
 {
   "name": "westbury-church-hub",
-  "version": "5.5.0",
+  "version": "6.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,24 +13,24 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@azure/data-tables": "^13.3.0",
-    "@azure/identity": "^4.11.1",
-    "@azure/communication-email": "^1.0.0",
-    "@azure/communication-sms": "^1.1.0",
-    "@azure/storage-blob": "^12.28.0",
-    "cookie-parser": "^1.4.7",
-    "express": "^5.1.0",
-    "helmet": "^8.1.0",
-    "web-push": "^3.6.7",
-    "compression": "^1.7.4",
-    "firebase-admin": "^13.5.0",
-    "@capacitor/core": "^8.5.1",
-    "@capacitor/android": "^8.5.1",
-    "@capacitor/push-notifications": "^8.1.2",
-    "exceljs": "^4.4.0",
-    "pdfkit": "^0.15.0"
+    "@azure/data-tables": "13.3.0",
+    "@azure/identity": "4.11.1",
+    "@azure/communication-email": "1.0.0",
+    "@azure/communication-sms": "1.1.0",
+    "@azure/storage-blob": "12.28.0",
+    "cookie-parser": "1.4.7",
+    "express": "5.1.0",
+    "helmet": "8.1.0",
+    "web-push": "3.6.7",
+    "compression": "1.7.4",
+    "firebase-admin": "13.5.0",
+    "@capacitor/core": "8.5.1",
+    "@capacitor/android": "8.5.1",
+    "@capacitor/push-notifications": "8.1.2",
+    "exceljs": "4.4.0",
+    "pdfkit": "0.15.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.1"
+    "@capacitor/cli": "8.5.1"
   }
 }

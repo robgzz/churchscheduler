@@ -14,8 +14,10 @@ export function requireCsrf(req,res,next){
 }
 export function sameOriginWrite(req,res,next){
   if(!['POST','PUT','PATCH','DELETE'].includes(req.method)) return next();
+  const fetchSite=String(req.get('Sec-Fetch-Site')||'').toLowerCase();
+  if(fetchSite==='cross-site') return res.status(403).json({error:'Cross-site request blocked.',code:'FETCH_METADATA_BLOCKED'});
   const origin=req.get('Origin');
-  if(!origin) return next();
+  if(!origin) return next(); // non-browser clients are still subject to CSRF token/auth policy
   try{
     const expected=`${req.protocol}://${req.get('host')}`;
     if(new URL(origin).origin!==new URL(expected).origin) return res.status(403).json({error:'Cross-site request blocked.',code:'ORIGIN_BLOCKED'});

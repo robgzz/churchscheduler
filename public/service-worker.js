@@ -1,5 +1,5 @@
-const CACHE='church-v2-shell-11-v530';
-const ASSETS=['/','/assets/styles.css?v=520','/assets/app.js?v=520','/assets/i18n.js?v=520','/assets/icon-192.png','/assets/icon-512.png','/manifest.webmanifest'];
+const CACHE='church-v2-shell-13-v600';
+const ASSETS=['/','/assets/styles.css?v=600','/assets/app.js?v=600','/assets/i18n.js?v=600','/assets/icon-192.png','/assets/icon-512.png','/manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{

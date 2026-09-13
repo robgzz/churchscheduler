@@ -1,6 +1,24 @@
-# Westbury Church Hub V5.5.0
+# Westbury Church Hub V6.0.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
+
+## V6.0 — DCE 4.0 Domain Intelligence Engine
+
+V6 establishes a reusable deterministic domain-intelligence core under Chat Hub. The engine now has typed domain schemas, relationships, predicates, semantic roles, result types, query algebra, typed dialogue/discourse state, proof-style reasoning traces and a comprehensive capability/risk registry across the Church Hub domain. Church-specific terminology lives in a domain pack so the core can later be reused for larger domains such as Azure/Exonuvia.
+
+The existing V5.6 fixes remain: goal arbitration prevents unfinished workflows from swallowing new questions, self/ownership language takes precedence over generic program lookups, Songs queries distinguish search/selection/status/history/pending users, and Church terminology such as predicar/Cena del Señor/oración final maps to canonical domain concepts.
+
+V6 also strengthens security and stability without increasing login difficulty for Westbury users: production `__Host-` cookies, idle session expiration, Storage-backed login throttling shared across replicas, Fetch Metadata defense, graceful Container Apps shutdown, canonical version reporting and `/readyz` deployment checks. The approved 10-character password rule and temporary `welcome` onboarding flow remain unchanged.
+
+See `RELEASE-NOTES-V6.0.0.md`, `docs/DCE-V6-DOMAIN-INTELLIGENCE.md`, `docs/SECURITY-STABILITY-V6.md`, and `docs/V6-UPGRADE.md`.
+
+## V5.6 DCE 3.0 — goal arbitration, diagnostics and semantic precision
+
+V5.6 strengthens Chat Hub around the real multi-turn failures observed in production. The deterministic engine now arbitrates between pending goals and explicit new requests, keeps suspended goals instead of letting one unfinished workflow hijack later questions, resolves self/possessive queries more precisely, separates song-library search from the member's selected songs, handles previous-Sunday program questions, and uses Church-specific semantic roles for natural terms such as *predicar*, *orar*, *Cena del Señor*, and *oración final*.
+
+A capability graph and rule-trace layer also let Chat Hub explain what can be done with a resource and why a program or eligibility check is blocked. DCE frames expose component-level confidence so low-confidence operation or entity slots can be clarified without discarding information that is already known.
+
+See `RELEASE-NOTES-V5.6.0.md`, `docs/DCE-V5.6-GOAL-ARBITRATION.md`, and `docs/V5.6-UPGRADE.md`.
 
 ## V5.3 service-aware eligibility and softer UI
 

@@ -63,6 +63,12 @@ export const intentCatalog=Object.freeze([
   I('songs.search','read.members',true,[
     'busca el canto','buscar canto','busca la cancion','que numero es el canto','encuentra el canto','find song','search song','song number','find el canto','search cantos'
   ],['songs','search']),
+  I('songs.mine','read.self',true,[
+    'cuales son mis cantos','que cantos escogi','dime los cantos que escogi','mis cantos seleccionados','what are my songs','which songs did i choose','show my selected songs'
+  ],['songs','self','selected']),
+  I('songs.status','read.self',true,[
+    'ya estan elegidos mis cantos','ya escogi mis cantos','tengo cantos elegidos','are my songs selected','did i choose my songs','are my songs ready'
+  ],['songs','self','status']),
   I('songs.history','read.self',true,[
     'mis cantos anteriores','historial de cantos','que cantos he cantado','cuales cantos use','que cante la ultima vez','mis ultimos cantos',
     'songs history','my previous songs','what songs did i use','what did i sing last time','show my cantos history'

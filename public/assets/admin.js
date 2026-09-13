@@ -1,4 +1,4 @@
-import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js?v=520';
+import { t, locale, setLocale, bilingual, contentText, weekday, dateLocale, initLocale } from './i18n.js?v=600';
 
 const $=(s,r=document)=>r.querySelector(s), main=$('#admin-main'), nav=$('#admin-nav'), title=$('#admin-title');
 const requestedTab=new URLSearchParams(window.location.search).get('tab');

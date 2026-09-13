@@ -5,13 +5,17 @@ import { verifyPassword, hashPassword } from '../auth/password.js';
 import { createSession, destroySession, destroyAllUserSessions, setSessionCookie, clearSessionCookie, SESSION_COOKIE } from '../auth/sessions.js';
 import { loginIpLimiter, loginAccountLimiter } from '../security/rateLimit.js';
 import { securityEvent } from '../security/audit.js';
+import { checkLoginThrottle, recordLoginFailure, clearLoginFailure } from '../security/loginThrottle.js';
 import { requireLogin } from '../auth/middleware.js';
 
 export const authRouter=express.Router();
 authRouter.post('/login',loginIpLimiter,loginAccountLimiter,async(req,res)=>{
-  const username=String(req.body.username||'').trim().toLowerCase();
+  const username=String(req.body.username||'').trim().toLowerCase(),ip=req.ip||req.socket?.remoteAddress||'unknown';
+  const throttle=await checkLoginThrottle(req.churchId,{username,ip});
+  if(throttle.blocked){res.setHeader('Retry-After',String(throttle.retryAfter||60));return res.status(429).json({error:'Too many login attempts. Please try again later.',code:'LOGIN_THROTTLED'});}
   const user=await getDoc(tableNames.users,req.churchId,username);
-  if(!user || user.active===false || !await verifyPassword(String(req.body.password||''),user.password)){ await securityEvent(req,'login_failed',{username}); return res.status(401).json({error:'Invalid username or password.'}); }
+  if(!user || user.active===false || !await verifyPassword(String(req.body.password||''),user.password)){ await recordLoginFailure(req.churchId,{username,ip});await securityEvent(req,'login_failed',{username}); return res.status(401).json({error:'Invalid username or password.'}); }
+  await clearLoginFailure(req.churchId,{username});
   const session=await createSession(req.churchId,user); setSessionCookie(res,session.token,session.expiresAt);
   const member=user.memberId?await getDoc(tableNames.members,req.churchId,user.memberId):null;
   await securityEvent(req,'login_success',{username}); res.json({ok:true,user:safeUser(user),member,csrfToken:session.csrfToken});

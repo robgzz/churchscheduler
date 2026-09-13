@@ -18,6 +18,7 @@ import { ownerRouter } from './routes/owner.js';
 import { hubModulesRouter } from './routes/hubModules.js';
 import { chatHubRouter } from './routes/chatHub.js';
 import { requireCsrf, sameOriginWrite } from './security/csrf.js';
+import { APP_VERSION, DCE_VERSION } from './version.js';
 
 const app=express();
 app.set('trust proxy',1);
@@ -48,8 +49,8 @@ app.use('/api',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next(
 app.use(sameOriginWrite);
 app.use(attachIdentity);
 app.use(requireCsrf);
-app.get('/healthz',(req,res)=>res.json({ok:true,version:'5.0.0'}));
-app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:'5.0.0'});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable'});}});
+app.get('/healthz',(req,res)=>res.json({ok:true,version:APP_VERSION,dceVersion:DCE_VERSION}));
+app.get('/readyz',async(req,res)=>{try{await ensureStorage();res.json({ok:true,version:APP_VERSION,dceVersion:DCE_VERSION});}catch(e){res.status(503).json({ok:false,error:'storage_unavailable',version:APP_VERSION});}});
 app.use('/api/setup',setupRouter);
 app.use('/api/auth',authRouter);
 app.use('/api/public',publicRouter);
@@ -82,4 +83,8 @@ app.use((err,req,res,next)=>{
 
 await ensureStorage();
 await seedIfNeeded(config.churchId);
-app.listen(config.port,()=>console.log(`Westbury Church Hub V5.0.0 listening on ${config.port}`));
+const server=app.listen(config.port,()=>console.log(`Westbury Church Hub V${APP_VERSION} / DCE ${DCE_VERSION} listening on ${config.port}`));
+let shuttingDown=false;
+function shutdown(signal){if(shuttingDown)return;shuttingDown=true;console.log(`${signal} received; draining HTTP requests.`);server.close(err=>{if(err){console.error(err);process.exitCode=1;}process.exit();});setTimeout(()=>{console.error('Graceful shutdown timed out.');process.exit(1);},15000).unref();}
+process.on('SIGTERM',()=>shutdown('SIGTERM'));
+process.on('SIGINT',()=>shutdown('SIGINT'));
