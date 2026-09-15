@@ -40,7 +40,7 @@ function intentLabel(id,locale='es'){
     'prayer.list':['ver peticiones públicas','view public prayer requests'],'prayer.mine':['ver tus peticiones','view your prayer requests'],'prayer.create':['crear una petición','create a prayer request'],'prayer.delete':['eliminar tu petición','delete your prayer request'],'prayer.deleteExpired':['eliminar tu petición','delete your prayer request'],'children.pickupCode':['recuperar tu código de recogida','retrieve your pickup code'],'children.parentVerification':['generar un código temporal de verificación','generate a one-time parent verification code'],
     'children.status':['consultar Cuidado de Niños','check Children Care'],'children.workerStatus':['consultar tu área de cuidado','check your caregiver area'],'children.pickupRequest':['solicitar recogida','request pickup'],
     'admin.console':['abrir administración','open administration'],'admin.programStatus':['consultar el estado del programa','check program status'],'admin.scheduleGenerate':['generar el programa','generate the schedule'],'admin.pendingSongs':['ver cantos pendientes','check pending songs'],
-    'admin.memberSearch':['buscar miembros','search members'],'admin.memberCreate':['crear un miembro','create a member'],'admin.memberEligibilityQuery':['consultar ministerios de un miembro','check a member’s ministries'],'admin.memberEligibilityUpdate':['cambiar ministerios de un miembro','change a member’s ministries'],'admin.visitors.query':['consultar visitantes','view visitors'],'admin.eventRsvpList':['ver RSVP de un evento','view event RSVPs'],'admin.bulletinUpload':['subir un boletín','upload a bulletin'],'admin.announcementCreate':['crear un anuncio','create an announcement'],'admin.eventCreate':['crear un evento','create an event'],'admin.taskCreate':['asignar una tarea','assign a task'],'admin.tasks.query':['consultar tareas administrativas','check administrative tasks'],'admin.prayer.list':['ver todas las peticiones','view all prayer requests'],'admin.childrenStatus':['consultar Cuidado de Niños activo','check active Children Care'],'admin.reports.query':['consultar reportes','check reports'],'admin.communications.query':['consultar comunicaciones','check communications'],'admin.audit.query':['consultar auditoría','check audit history'],'admin.modules.query':['consultar módulos','check modules'],'admin.moduleToggle':['activar o desactivar un módulo','enable or disable a module']
+    'admin.memberSearch':['buscar miembros','search members'],'admin.memberProfileQuery':['consultar el perfil de un miembro','view a member profile'],'admin.memberCreate':['crear un miembro','create a member'],'admin.memberEligibilityQuery':['consultar ministerios de un miembro','check a member’s ministries'],'admin.memberEligibilityUpdate':['cambiar ministerios de un miembro','change a member’s ministries'],'admin.visitors.query':['consultar visitantes','view visitors'],'admin.eventRsvpList':['ver RSVP de un evento','view event RSVPs'],'admin.bulletinUpload':['subir un boletín','upload a bulletin'],'admin.announcementCreate':['crear un anuncio','create an announcement'],'admin.eventCreate':['crear un evento','create an event'],'admin.taskCreate':['asignar una tarea','assign a task'],'admin.tasks.query':['consultar tareas administrativas','check administrative tasks'],'admin.prayer.list':['ver todas las peticiones','view all prayer requests'],'admin.childrenStatus':['consultar Cuidado de Niños activo','check active Children Care'],'admin.reports.query':['consultar reportes','check reports'],'admin.communications.query':['consultar comunicaciones','check communications'],'admin.audit.query':['consultar auditoría','check audit history'],'admin.modules.query':['consultar módulos','check modules'],'admin.moduleToggle':['activar o desactivar un módulo','enable or disable a module']
   };
   const pair=labels[id]||[id,id];return pair[locale==='en'?1:0];
 }
@@ -52,6 +52,15 @@ export async function processChat(req,{message='',attachment=null,action='',scre
   const state=await getChatState(req.churchId,req.identity);state.context={...(state.context||{}),screenContext:screenContext||{}};ensureDiscourse(state);
   const normalized=normalizeInput(message||'');
   const actor={isAdmin:isAdmin(req.identity),isOwner:isOwner(req.identity),memberId:req.identity?.member?.id||''};
+  if(action==='conversation:reset'){
+    state.pending=null;state.lastIntent='';state.context={screenContext:screenContext||{},suspendedGoals:[]};ensureDiscourse(state);clearExpectedResponse(state);
+    await saveChatState(req.churchId,state);
+    return {reply:local(req,'Listo. Empezamos una conversación nueva. ¿En qué te ayudo con Church Hub?','Done. We started a new conversation. How can I help you with Church Hub?'),intent:'conversation.reset',reset:true};
+  }
+  if(action==='conversation:resume'){
+    const resumed=resumeSuspendedGoal(state);syncExpectedResponse(state);await saveChatState(req.churchId,state);
+    return resumed?{reply:local(req,'Retomamos lo que estabas haciendo antes. Continúa con la información solicitada o dime “cancelar” si ya no quieres hacer ese cambio.','We are back to what you were doing before. Continue with the requested information, or say “cancel” if you no longer want to make that change.'),intent:state.lastIntent||'conversation.resume',resumed:true,actions:[{id:'conversation:reset',kind:'action',labelEs:'Cancelar y empezar de nuevo',labelEn:'Cancel and start over'}]}:{reply:local(req,'No hay una tarea anterior pendiente para retomar.','There is no previous pending task to resume.'),intent:'conversation.resume',resumed:false};
+  }
   const arbitration=!action?arbitrateTurn(normalized,state):{mode:'action',score:1};
   if(arbitration.mode==='new_goal')suspendGoal(state,'explicit_new_goal');
   if(arbitration.mode==='resume')resumeSuspendedGoal(state);
@@ -93,7 +102,17 @@ export async function processChat(req,{message='',attachment=null,action='',scre
   if(action?.startsWith('clarify:')) intent=action.slice(8);
   const chosen=byId.get(intent);if(chosen&&!authorize(req.identity,chosen.capability)){return {reply:local(req,'Esa acción requiere permisos adicionales.','That action requires additional permissions.'),intent,denied:true};}
   if(frame&&frame.intent!=='unknown')state.context.lastFrame=frame;
-  const result=await executeIntent(req,{intent,message,attachment,state,action:action?.startsWith('clarify:')?'':action,frame});
+  let result;
+  try{
+    result=await executeIntent(req,{intent,message,attachment,state,action:action?.startsWith('clarify:')?'':action,frame});
+  }catch(error){
+    const reference=crypto.randomUUID().replace(/-/g,'').slice(0,10).toUpperCase();
+    console.error(`[Chat Hub ${reference}] intent=${intent}`,error);
+    const id=`error_${crypto.randomUUID().replace(/-/g,'').slice(0,16)}`;
+    await putDoc(tableNames.chatUnknowns,req.churchId,id,{id,kind:'execution_error',intent,memberId:req.identity?.member?.id||'',reference,messageHash:crypto.createHash('sha256').update(normalized.normalized||'').digest('hex'),createdAt:nowIso(),locale:req.locale||'es'},{memberId:req.identity?.member?.id||'',createdAt:nowIso()}).catch(()=>{});
+    state.context.lastExecutionError={reference,intent,at:nowIso()};syncExpectedResponse(state);await saveChatState(req.churchId,state).catch(()=>{});
+    return {reply:local(req,`Entendí la solicitud, pero ocurrió un problema al ejecutarla. No hice ningún cambio. Referencia: ${reference}.`,`I understood the request, but there was a problem executing it. I did not make any change. Reference: ${reference}.`),intent,errorReference:reference,executionError:true,actions:[{id:'conversation:reset',kind:'action',labelEs:'Empezar una conversación nueva',labelEn:'Start a new conversation'}]};
+  }
   if(!result){const highlights=knownHighlights(normalized);await logUnknown(req,normalized,highlights).catch(()=>{});return {reply:local(req,'No pude completar esa solicitud. Intenta decirlo de otra manera.','I could not complete that request. Try saying it another way.'),intent:'unknown',highlights};}
   state.lastIntent=intent;
   if(frame&&frame.intent!=='unknown')state.context.lastFrame=frame;
@@ -101,5 +120,8 @@ export async function processChat(req,{message='',attachment=null,action='',scre
   syncExpectedResponse(state);
   await saveChatState(req.churchId,state);
   const cap=churchCapabilities.get(intent);
-  return {...result,reply:req.locale==='en'?(result.replyEn||result.replyEs):(result.replyEs||result.replyEn),intent,confidence:resolution.confidence,understanding:frame?{speechAct:frame.speechAct,operation:frame.operation,domain:frame.domain,resource:frame.resource,predicate:frame.predicate,roles:frame.roles,scope:frame.scope,resultType:frame.resultType,filters:frame.filters,time:frame.time,projection:frame.projection,capability:cap?{id:cap.id,risk:cap.risk,confirm:cap.confirm}:null,plan:planFrame(frame),arbitration}:undefined};
+  const actions=[...(result.actions||[])];
+  if(arbitration.mode==='new_goal'&&(state.context?.suspendedGoals||[]).length&&!actions.some(x=>x.id==='conversation:resume'))actions.push({id:'conversation:resume',kind:'action',labelEs:'Retomar tarea anterior',labelEn:'Resume previous task'});
+  const reply=req.locale==='en'?(result.replyEn||result.replyEs):(result.replyEs||result.replyEn);
+  return {...result,actions,reply,intent,confidence:resolution.confidence,understanding:frame?{speechAct:frame.speechAct,operation:frame.operation,domain:frame.domain,resource:frame.resource,predicate:frame.predicate,roles:frame.roles,scope:frame.scope,resultType:frame.resultType,filters:frame.filters,time:frame.time,projection:frame.projection,capability:cap?{id:cap.id,risk:cap.risk,confirm:cap.confirm}:null,plan:planFrame(frame),arbitration}:undefined};
 }

@@ -14,8 +14,8 @@ const DOMAIN_WORDS={
   reports:/\b(reporte|reportes|report|reports)\b/,
   modules:/\b(modulo|modulos|module|modules)\b/
 };
-const QUESTION=/^(que|quien|quienes|cuando|donde|como|cual|cuales|cuanto|cuantos|cuantas|por que|why|what|who|when|where|how|which|is|are|do|does|did|have|has|can)\b/;
-const STRONG_COMMAND=/\b(crea|crear|agrega|agregar|cambia|cambiar|asigna|asignar|quita|quitar|elimina|eliminar|sube|subir|publica|publicar|genera|generar|create|add|change|assign|remove|delete|upload|publish|generate)\b/;
+const QUESTION=/^(que|quien|quienes|cuando|donde|como|cual|cuales|cuanto|cuantos|cuantas|por que|dame|muestrame|mostrar|lista|listar|why|what|who|when|where|how|which|show|list|give me|is|are|do|does|did|have|has|can)\b/;
+const STRONG_COMMAND=/\b(crea|crear|agrega|agregar|incluye|incluir|activa|activar|habilita|habilitar|cambia|cambiar|asigna|asignar|quita|quitar|elimina|eliminar|sube|subir|publica|publicar|genera|generar|dame|muestrame|mostrar|lista|listar|create|add|include|enable|change|assign|remove|delete|upload|publish|generate|show|list|give)\b/;
 
 function detectDomain(text){for(const [domain,re] of Object.entries(DOMAIN_WORDS))if(re.test(text))return domain;return '';}
 function pendingDomain(state){const p=state?.pending?.type||'',g=state?.context?.activeGoal?.procedureId||'';
@@ -49,9 +49,9 @@ export function arbitrateTurn(normalized,state={}){
   const domain=detectDomain(text),prior=pendingDomain(state),explicit=QUESTION.test(text)||STRONG_COMMAND.test(text);
   if(domain&&domain!==prior&&(explicit||text.split(' ').length>=3))return {mode:'new_goal',score:explicit?.99:.93,domain,priorDomain:prior};
   if(domain&&explicit&&domain===prior){
-    // Same domain can still be a new goal. Self queries such as "cuales son mis cantos"
-    // must not be swallowed by an active song-selection workflow.
-    if(/\b(mis|my|tengo|have|cuales|which|quien|who|historial|history|ya estan|already|estado|status)\b/.test(text))return {mode:'new_goal',score:.91,domain,priorDomain:prior};
+    // Same domain can still be a new goal. Listing, profile, role, status and self queries
+    // must not be swallowed by an unfinished edit in that same domain.
+    if(/\b(mis|my|tengo|have|cuales|which|quien|who|historial|history|ya estan|already|estado|status|lista|listar|todos|todas|perfil|profile|admin|administrador|administrator|cuantos|how many)\b/.test(text))return {mode:'new_goal',score:.94,domain,priorDomain:prior};
   }
   if(explicit&&QUESTION.test(text))return {mode:'new_goal',score:.86,domain,priorDomain:prior};
   return {mode:'continue',score:.62,domain,priorDomain:prior};

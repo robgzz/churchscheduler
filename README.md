@@ -1,6 +1,16 @@
-# Westbury Church Hub V6.1.0
+# Westbury Church Hub V7.0.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
+
+## V7.0 — Conversational Operations, Leadership Intelligence & UI Precision
+
+V7 turns the v6 DCE foundation into a more complete conversational operating layer for the church. Chat Hub now has stronger church-language precision, executable capability coverage, safer error containment, same-domain goal switching, richer profile/authority/eligibility distinctions, improved date handling, overdue-task accuracy, and a more natural GPT-like conversation surface while remaining deterministic and permission-gated.
+
+Reporting is rebuilt around leadership decisions instead of database-style exports. Three flagship reports — **Monthly Leadership Overview**, **Weekly Worship Readiness**, and **Follow-up Accountability** — add executive metrics, findings, attention items, visual analysis, interpretation notes, drill-down records, and professional PDF/Excel composition. The Report Center previews the analysis before export.
+
+The member experience also receives focused UI refinement around Chat Hub, tasks, loading/thinking feedback, workflow continuity, accessibility/focus states, and responsive administration.
+
+See `RELEASE-NOTES-V7.0.0.md` and `docs/V7-UPGRADE.md`.
 
 ## V6.1 — Reliability, Editable Administration & ACS Email
 
