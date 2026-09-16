@@ -1,4 +1,4 @@
-# Westbury Church Hub V7.0.0
+# Westbury Church Hub V7.0.1
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
 
@@ -10,7 +10,7 @@ Reporting is rebuilt around leadership decisions instead of database-style expor
 
 The member experience also receives focused UI refinement around Chat Hub, tasks, loading/thinking feedback, workflow continuity, accessibility/focus states, and responsive administration.
 
-See `RELEASE-NOTES-V7.0.0.md` and `docs/V7-UPGRADE.md`.
+See `RELEASE-NOTES-V7.0.1.md` and `docs/V7-UPGRADE.md`.
 
 ## V6.1 — Reliability, Editable Administration & ACS Email
 

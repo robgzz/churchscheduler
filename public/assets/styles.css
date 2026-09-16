@@ -193,3 +193,12 @@ html[data-theme="dark"] .home-welcome{background:linear-gradient(125deg,#102033,
 @media(max-width:720px){.report-period-panel{grid-template-columns:1fr 1fr}.report-presets{grid-column:1/-1}.report-catalog-card{grid-template-columns:1fr}.report-card-actions{justify-content:flex-start}.report-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-findings,.report-chart-grid{grid-template-columns:1fr}.report-record{grid-template-columns:repeat(2,minmax(0,1fr))}.chat-hub-hero-vnext{display:grid;grid-template-columns:auto 1fr}.chat-hero-actions{grid-column:1/-1;grid-template-columns:1fr 1fr;width:100%}}
 @media(max-width:480px){.report-metric-grid{grid-template-columns:1fr}.report-preview-head{display:grid}.report-attention-row{grid-template-columns:8px 1fr}.report-attention-meta{grid-column:2;text-align:left;display:flex;gap:8px}.report-record{grid-template-columns:1fr}.report-bar-row{grid-template-columns:90px 1fr 28px}.chat-hub-hero-vnext{grid-template-columns:1fr}.chat-hub-ai-mark{width:40px;height:40px}.chat-hero-actions{grid-template-columns:1fr 1fr}}
 .task-overdue{border-color:color-mix(in srgb,var(--danger) 42%,var(--border));background:linear-gradient(145deg,color-mix(in srgb,var(--danger) 6%,var(--surface)),var(--surface))}.task-overdue-label{display:inline-flex;margin-top:5px;padding:3px 7px;border-radius:999px;background:var(--danger-soft);color:var(--danger);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.task-due-overdue{color:var(--danger);font-weight:800}.task-attention{align-items:flex-start}.task-history{margin-top:8px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2)}.task-history>summary{padding:13px 15px;cursor:pointer;font-weight:800;font-size:12px}.task-history>.stack{padding:0 10px 10px}.task-history-card{box-shadow:none;padding:12px}
+
+/* v7.0.1 - progressive disclosure for future worship programs */
+details.modern-program > summary.program-summary{list-style:none;cursor:pointer;margin:-1px;}
+details.modern-program > summary.program-summary::-webkit-details-marker{display:none;}
+details.modern-program .program-expand-chevron{font-size:1.1rem;opacity:.65;transition:transform .18s ease;margin-left:4px;}
+details.modern-program[open] .program-expand-chevron{transform:rotate(180deg);}
+details.modern-program .program-collapsible-body{padding-top:2px;}
+details.modern-program:not([open]){padding-bottom:0;}
+details.modern-program:not([open]) .program-date-band{border-bottom:0;}

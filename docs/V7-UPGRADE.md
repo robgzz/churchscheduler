@@ -1,13 +1,13 @@
-# Westbury Church Hub V7.0.0 Upgrade
+# Westbury Church Hub V7.0.1 Upgrade
 
 ## Scope
 
-V7.0.0 upgrades the v6.1 application in place. It does not require a new Azure service or a data migration.
+V7.0.1 upgrades the v6.1/v7.0.0 application in place. It does not require a new Azure service or a data migration.
 
 ## Upgrade steps
 
 1. Back up the current application configuration and persistent Azure Table/Blob data using the same operational process used for prior releases.
-2. Replace the v6.1 working tree with the V7.0.0 full package.
+2. Replace the v6.1 working tree with the V7.0.1 full package.
 3. Install production dependencies with the repository's normal Node 22 deployment workflow.
 4. Build/push the new container image and deploy through the existing GitHub/Azure Container Apps pipeline.
 5. Verify `/healthz` and `/readyz` after deployment.
@@ -51,3 +51,10 @@ Older records without these timestamps remain supported; historical completion-d
 ## Rollback
 
 Because V7 does not require a destructive schema migration, rollback can use the prior v6.1 container image if needed. Keep the V7-written additive task timestamp fields; v6.1 will ignore unknown fields.
+
+
+## V7.0.1 live-test fixes
+- Admin console bootstrap initialization restored.
+- Children Care parent alerts now create in-app notifications as well as enabled delivery channels.
+- App notification polling updates every 10 seconds while signed in.
+- Only the three nearest worship program cards are expanded by default; later programs are collapsible.

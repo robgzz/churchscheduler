@@ -61,9 +61,9 @@ test('V6.1 content administration only loads data for the selected tab',()=>{
   assert.match(ui,/else if\(tab==='inbox'\)\{\[visitors,petitions\]=await Promise\.all/);
 });
 
-test('V6.1 member notification and task home lookups use short-lived client cache',()=>{
+test('V6.1 task home lookup stays cached while v7.0.1 notifications refresh live',()=>{
   const app=read('public/assets/app.js');
-  assert.match(app,/cachedApi\('\/api\/member\/notifications',15000\)/);
+  assert.match(app,/api\('\/api\/member\/notifications'\)/);
   assert.match(app,/cachedApi\('\/api\/modules\/followups\/mine',20000\)/);
 });
 
