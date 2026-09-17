@@ -1,13 +1,16 @@
 {
   "name": "westbury-church-hub",
-  "version": "7.0.1",
+  "version": "6.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
     "job": "node src/jobs/scheduler.js",
     "test": "node --test",
-    "lint:syntax": "node --check src/server.js && find src -name '*.js' -print0 | xargs -0 -n1 node --check && find public/assets -name '*.js' -print0 | xargs -0 -n1 node --check"
+    "lint:syntax": "node --check src/server.js && find src -name '*.js' -print0 | xargs -0 -n1 node --check && find public/assets -name '*.js' -print0 | xargs -0 -n1 node --check",
+    "ios:add": "npx cap add ios",
+    "ios:sync": "npx cap sync ios",
+    "ios:open": "npx cap open ios"
   },
   "engines": {
     "node": ">=22"
@@ -28,7 +31,8 @@
     "@capacitor/android": "8.5.1",
     "@capacitor/push-notifications": "8.1.2",
     "exceljs": "4.4.0",
-    "pdfkit": "0.15.0"
+    "pdfkit": "0.15.0",
+    "@capacitor/ios": "8.5.1"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.1"

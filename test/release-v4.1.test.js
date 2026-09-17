@@ -68,9 +68,8 @@ test('V4.1 infrastructure includes Chat Hub tables and pickup key secret',()=>{
   assert.match(bicep,/CHILD_PICKUP_CODE_ENCRYPTION_KEY/);
 });
 
-test('V4.1 UI exposes Chat Hub in nav, home, floating action and admin module icon',()=>{
+test('V4.1 Chat Hub remains available from home/floating access and admin module icon',()=>{
   const app=read('public/assets/app.js'),admin=read('public/assets/admin.js'),css=read('public/assets/styles.css');
-  assert.match(app,/id:'chat'.*Chat Hub/);
   assert.match(app,/chat-hub-fab/);
   assert.match(app,/chat-home-card/);
   assert.match(admin,/chatHub:'💬'/);

@@ -1,9 +1,18 @@
 {
   "appId": "com.exonuvia.westburychurchscheduler",
-  "appName": "Westbury Church Scheduler",
+  "appName": "Westbury Church Hub",
   "webDir": "public",
   "server": {
     "url": "https://westburyapp-web.thankfulgrass-b69ccbff.centralus.azurecontainerapps.io",
     "cleartext": false
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
   }
 }

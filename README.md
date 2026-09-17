@@ -1,20 +1,10 @@
-# Westbury Church Hub V7.0.1
+# Westbury Church Hub V6.2.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
 
-## V7.0 — Conversational Operations, Leadership Intelligence & UI Precision
-
-V7 turns the v6 DCE foundation into a more complete conversational operating layer for the church. Chat Hub now has stronger church-language precision, executable capability coverage, safer error containment, same-domain goal switching, richer profile/authority/eligibility distinctions, improved date handling, overdue-task accuracy, and a more natural GPT-like conversation surface while remaining deterministic and permission-gated.
-
-Reporting is rebuilt around leadership decisions instead of database-style exports. Three flagship reports — **Monthly Leadership Overview**, **Weekly Worship Readiness**, and **Follow-up Accountability** — add executive metrics, findings, attention items, visual analysis, interpretation notes, drill-down records, and professional PDF/Excel composition. The Report Center previews the analysis before export.
-
-The member experience also receives focused UI refinement around Chat Hub, tasks, loading/thinking feedback, workflow continuity, accessibility/focus states, and responsive administration.
-
-See `RELEASE-NOTES-V7.0.1.md` and `docs/V7-UPGRADE.md`.
-
 ## V6.1 — Reliability, Editable Administration & ACS Email
 
-V6.1 builds on the DCE 4.0 Domain Intelligence Engine with editable published content, guarded member-profile deletion, event/task editing, ACS email configuration recovery, and targeted performance improvements. See `RELEASE-NOTES-V6.1.0.md` and `docs/V6.1-UPGRADE.md`.
+V6.2 builds on the DCE 4.0 Domain Intelligence Engine with editable published content, guarded member-profile deletion, event/task editing, ACS email configuration recovery, and targeted performance improvements. See `RELEASE-NOTES-V6.1.0.md` and `docs/V6.1-UPGRADE.md`.
 
 ## V6.0 — DCE 4.0 Domain Intelligence Engine
 
@@ -294,3 +284,7 @@ See `docs/AZURE-COMMUNICATION-SERVICES-V3.0.md` for the complete staged procedur
 
 ## V3.2 additions
 See `RELEASE-NOTES-V3.3.0.md` for Program Admin on Duty, operational notifications, song-selection history, and same-service song de-duplication.
+
+## V6.2.0 reliability / iOS readiness
+
+V6.2.0 restores the administrator-console bootstrap, removes the duplicate Chat Hub bottom-nav icon while keeping the floating/home access points, and adds native iOS/APNs support alongside Android FCM. See `RELEASE-NOTES-V6.2.0.md` and `docs/IOS-PACKAGING-V6.2.md`.

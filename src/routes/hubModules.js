@@ -84,30 +84,25 @@ hubModulesRouter.delete('/admin/events/:id',requireAdmin,requireModule('events')
   res.json({ok:true});
 });
 
-// Actionable tasks remain visible after their due date so overdue work cannot silently disappear.
-// Completed/cancelled tasks remain available as history until the assignee explicitly hides them.
+// Tasks expire from the assignee screen after 11:59 PM on dueDate but remain in storage/reports
+// with the final status reached (open, in_progress, completed, or cancelled).
 hubModulesRouter.get('/followups/mine',requireModule('followups'),async(req,res)=>{
   const memberId=req.identity.member?.id||'';
   const [rows,today]=await Promise.all([
     listDocs(tableNames.followUps,req.churchId,{filter:`assignedTo eq '${escFilter(memberId)}'`,max:1000}),
     churchTodayISO(req.churchId)
   ]);
-  const terminal=x=>['completed','cancelled'].includes(String(x.status||'').toLowerCase());
-  res.json(rows.filter(x=>x.hiddenByAssignee!==true).sort((a,b)=>{
-    const aa=terminal(a)?1:0,bb=terminal(b)?1:0;if(aa!==bb)return aa-bb;
-    const ao=!terminal(a)&&a.dueDate&&a.dueDate<today?0:1,bo=!terminal(b)&&b.dueDate&&b.dueDate<today?0:1;if(ao!==bo)return ao-bo;
-    return String(a.dueDate||'9999-12-31').localeCompare(String(b.dueDate||'9999-12-31'))||String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||''));
-  }));
+  res.json(rows
+    .filter(x=>x.hiddenByAssignee!==true&&(!x.dueDate||x.dueDate>=today))
+    .sort((a,b)=>String(a.dueDate||'9999-12-31').localeCompare(String(b.dueDate||'9999-12-31'))));
 });
 
 hubModulesRouter.put('/followups/:id',requireModule('followups'),async(req,res)=>{
   const old=await getDoc(tableNames.followUps,req.churchId,req.params.id);
   if(!old||old.assignedTo!==req.identity.member?.id)return res.status(404).json({error:'Task not found'});
   const allowed=['open','in_progress','completed','cancelled'];
-  const status=allowed.includes(req.body?.status)?req.body.status:old.status,changedAt=nowIso();
-  const doc={...old,status,hiddenByAssignee:req.body?.hiddenByAssignee===true?true:old.hiddenByAssignee===true,updatedAt:changedAt,updatedBy:req.identity.member?.id||''};
-  if(status==='completed'&&old.status!=='completed')doc.completedAt=changedAt;else if(status!=='completed'&&old.status==='completed')doc.completedAt='';
-  if(status==='cancelled'&&old.status!=='cancelled')doc.cancelledAt=changedAt;else if(status!=='cancelled'&&old.status==='cancelled')doc.cancelledAt='';
+  const status=allowed.includes(req.body?.status)?req.body.status:old.status;
+  const doc={...old,status,hiddenByAssignee:req.body?.hiddenByAssignee===true?true:old.hiddenByAssignee===true,updatedAt:nowIso(),updatedBy:req.identity.member?.id||''};
   await putDoc(tableNames.followUps,req.churchId,doc.id,doc,{status:doc.status,assignedTo:doc.assignedTo||'',dueDate:doc.dueDate||''});
   await appendHistory(req.churchId,{eventType:'followup.member_updated',memberId:req.identity.member?.id||'',source:'member',details:{followUpId:doc.id,status:doc.status,hiddenByAssignee:doc.hiddenByAssignee===true}});
   res.json(doc);
@@ -125,5 +120,5 @@ hubModulesRouter.delete('/followups/:id',requireModule('followups'),async(req,re
 
 hubModulesRouter.get('/admin/followups',requireAdmin,requireModule('followups'),async(req,res)=>{const rows=await listDocs(tableNames.followUps,req.churchId,{max:5000});res.json(rows.sort((a,b)=>String(a.dueDate||'').localeCompare(String(b.dueDate||''))));});
 hubModulesRouter.post('/admin/followups',requireAdmin,requireModule('followups'),async(req,res)=>{const title=clean(req.body?.title);if(!title)return res.status(400).json({error:'Follow-up title is required.'});const followId=id('followup'),doc={id:followId,title,sourceType:clean(req.body.sourceType,40),sourceId:clean(req.body.sourceId,100),assignedTo:clean(req.body.assignedTo,100),dueDate:dateOk(req.body.dueDate)?req.body.dueDate:'',status:'open',hiddenByAssignee:false,notes:clean(req.body.notes,2000),createdAt:nowIso(),createdBy:req.identity.member?.id||''};await putDoc(tableNames.followUps,req.churchId,followId,doc,{status:doc.status,assignedTo:doc.assignedTo,dueDate:doc.dueDate});await appendHistory(req.churchId,{eventType:'followup.created',memberId:req.identity.member?.id||'',source:'admin',details:{followUpId:followId,sourceType:doc.sourceType,sourceId:doc.sourceId}});res.status(201).json(doc);});
-hubModulesRouter.put('/admin/followups/:id',requireAdmin,requireModule('followups'),async(req,res)=>{const old=await getDoc(tableNames.followUps,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Follow-up not found'});const allowed=['open','in_progress','completed','cancelled'],status=allowed.includes(req.body?.status)?req.body.status:old.status,changedAt=nowIso(),doc={...old,...req.body,id:old.id,status,updatedAt:changedAt,updatedBy:req.identity.member?.id||''};if(status==='completed'&&old.status!=='completed')doc.completedAt=changedAt;else if(status!=='completed'&&old.status==='completed')doc.completedAt='';if(status==='cancelled'&&old.status!=='cancelled')doc.cancelledAt=changedAt;else if(status!=='cancelled'&&old.status==='cancelled')doc.cancelledAt='';await putDoc(tableNames.followUps,req.churchId,doc.id,doc,{status:doc.status,assignedTo:doc.assignedTo||'',dueDate:doc.dueDate||''});await appendHistory(req.churchId,{eventType:'followup.updated',memberId:req.identity.member?.id||'',source:'admin',details:{followUpId:doc.id,status:doc.status}});res.json(doc);});
+hubModulesRouter.put('/admin/followups/:id',requireAdmin,requireModule('followups'),async(req,res)=>{const old=await getDoc(tableNames.followUps,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Follow-up not found'});const allowed=['open','in_progress','completed','cancelled'],doc={...old,...req.body,id:old.id,status:allowed.includes(req.body?.status)?req.body.status:old.status,updatedAt:nowIso(),updatedBy:req.identity.member?.id||''};await putDoc(tableNames.followUps,req.churchId,doc.id,doc,{status:doc.status,assignedTo:doc.assignedTo||'',dueDate:doc.dueDate||''});await appendHistory(req.churchId,{eventType:'followup.updated',memberId:req.identity.member?.id||'',source:'admin',details:{followUpId:doc.id,status:doc.status}});res.json(doc);});
 hubModulesRouter.delete('/admin/followups/:id',requireAdmin,requireModule('followups'),async(req,res)=>{const old=await getDoc(tableNames.followUps,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Follow-up not found'});await deleteDoc(tableNames.followUps,req.churchId,old.id);await appendHistory(req.churchId,{eventType:'followup.deleted',memberId:req.identity.member?.id||'',source:'admin',details:{followUpId:old.id,title:old.title||'',assignedTo:old.assignedTo||''}});res.json({ok:true});});

@@ -15,7 +15,7 @@ test('V4.4 server recognizes a Church Administrator stored on the member profile
 
 test('V4.4 protects admin JS from stale PWA module graphs',()=>{
   const sw=read('public/service-worker.js'),server=read('src/server.js'),admin=read('public/assets/admin.js');
-  assert.match(admin,/i18n\.js\?v=(?:4(?:5|6)0|5(?:00|10|20)|6(?:00|10)|70[01])/);
+  assert.match(admin,/i18n\.js\?v=(?:4(?:5|6)0|5(?:00|10|20)|6(?:00|10|20))/);
   assert.match(sw,/cache:'no-store'/);
   assert.match(sw,/url\.pathname\.endsWith\('\.js'\)/);
   assert.match(server,/no-cache, no-store, must-revalidate/);
@@ -28,11 +28,10 @@ test('V4.4 bottom nav is a true touch-scroll strip',()=>{
   assert.match(css,/-webkit-overflow-scrolling:touch!important/);
 });
 
-test('V7 event views expire by church-local date while overdue actionable tasks remain visible and history is retained',()=>{
+test('V4.4 event/task member views expire by church-local date while retaining report records',()=>{
   const routes=read('src/routes/hubModules.js');
   assert.match(routes,/x\.dateISO>=today/);
-  assert.match(routes,/Actionable tasks remain visible/);
-  assert.doesNotMatch(routes,/x\.dueDate>=today/);
+  assert.match(routes,/x\.dueDate>=today/);
   assert.match(routes,/hiddenByMember:true/);
   assert.match(routes,/hiddenByAssignee:true/);
   assert.match(routes,/followup\.hidden_by_assignee/);

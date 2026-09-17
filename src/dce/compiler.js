@@ -8,7 +8,7 @@ const cancellation=rx(['cancela','cancelar','cancel','olvidalo','dejalo','never 
 const rejection=rx(['no','nope','nah']);
 const correction=rx(['no,?','mejor','quise decir','correccion','correction','i mean']);
 const openWords=rx(['abre','abrir','ve','llevame','open','go','take me']);
-const commandWords=rx(['make','crea','crear','agrega','agregar','asigna','asignar','cambia','cambiar','elimina','eliminar','borra','borrar','sube','subir','publica','publicar','genera','generar','registra','registrame','confirma','solicita','solicitar','marca','oculta','ocultar','activa','activar','habilita','habilitar','incluye','incluir','permite','permitir','desactiva','desactivar','create','add','assign','change','delete','remove','upload','publish','generate','register','request','mark','hide','enable','disable']);
+const commandWords=rx(['make','crea','crear','agrega','agregar','asigna','asignar','cambia','cambiar','elimina','eliminar','borra','borrar','sube','subir','publica','publicar','genera','generar','registra','registrame','confirma','solicita','solicitar','marca','oculta','ocultar','activa','activar','desactiva','desactivar','create','add','assign','change','delete','remove','upload','publish','generate','register','request','mark','hide','enable','disable']);
 
 function detectSpeechAct(n,ctx){const t=n.normalized;if(confirmation.test(t)&&t.split(' ').length<=4)return SpeechAct.CONFIRMATION;if(cancellation.test(t)&&t.split(' ').length<=5)return SpeechAct.CANCELLATION;if(rejection.test(t)&&t.split(' ').length<=4)return SpeechAct.REJECTION;if(correction.test(t)&&ctx?.lastFrame)return SpeechAct.CORRECTION;if(/\b(por que|porque|why|que falta|what is missing|whats missing)\b/.test(t))return SpeechAct.WHY;if(/^(como|how)\b/.test(t)||/\b(no se como|no se cómo|how do i|how can i)\b/.test(t))return SpeechAct.HOW_TO;if(/\b(ayudame|necesito ayuda|help me|i need help)\b/.test(t))return SpeechAct.HELP;if(/\b(que es|para que sirve|what is|what does|explica|explain)\b/.test(t))return SpeechAct.EXPLAIN;if(openWords.test(t))return SpeechAct.NAVIGATION;if(n.isQuestion||wh.test(t)||/^(hay|tengo|tenemos|es|esta|estan|do|does|did|is|are|am|have|has|can|could|would|will)\b/.test(t))return SpeechAct.QUERY;if(commandWords.test(t)||n.isRequest)return SpeechAct.COMMAND;if(ctx?.lastFrame&&t.split(' ').length<=7)return SpeechAct.FOLLOW_UP;return SpeechAct.UNKNOWN;}
 function detectOperation(t,act){
@@ -32,7 +32,7 @@ function detectOperation(t,act){
   if(/\b(sube|subir|carga|upload)\b/.test(t))return Operation.UPLOAD;
   if(/\b(publica|publicar|publish)\b/.test(t))return Operation.PUBLISH;
   if(/\b(genera|generar|generate)\b/.test(t))return Operation.GENERATE;
-  if(/\b(activa|activar|habilita|habilitar|incluye|incluir|permite|permitir|enable|include|allow|turn on)\b/.test(t))return Operation.ENABLE;
+  if(/\b(activa|activar|habilita|enable|turn on)\b/.test(t))return Operation.ENABLE;
   if(/\b(desactiva|desactivar|disable|turn off)\b/.test(t))return Operation.DISABLE;
   if(/\b(solicita|solicitar|quiero|necesito|request|i want|i need)\b/.test(t)&&act===SpeechAct.COMMAND)return Operation.REQUEST;
   if(act===SpeechAct.QUERY)return /\b(cuales|lista|muestrame|mostrar|ver|show|list|what)\b/.test(t)?Operation.LIST:Operation.GET;

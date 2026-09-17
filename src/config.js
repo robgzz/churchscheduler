@@ -24,7 +24,12 @@ export const config = {
   acsSmsFromNumber: process.env.ACS_SMS_FROM_NUMBER || '',
   publicAppUrl: String(process.env.PUBLIC_APP_URL || '').replace(/\/$/,''),
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
-  firebaseServiceAccountJsonBase64: process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 || ''
+  firebaseServiceAccountJsonBase64: process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 || '',
+  apnsEnabled: String(process.env.APNS_ENABLED || '').toLowerCase() === 'true',
+  apnsTeamId: process.env.APNS_TEAM_ID || '',
+  apnsKeyId: process.env.APNS_KEY_ID || '',
+  apnsBundleId: process.env.APNS_BUNDLE_ID || 'com.exonuvia.westburychurchscheduler',
+  apnsPrivateKeyBase64: process.env.APNS_PRIVATE_KEY_BASE64 || ''
 };
 
 export const tableNames = {
