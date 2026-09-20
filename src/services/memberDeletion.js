@@ -7,11 +7,11 @@ import { todayIso } from '../scheduler/dates.js';
 
 const esc=v=>String(v||'').replace(/'/g,"''");
 
-export async function deleteMemberProfile(churchId,memberId,{actorId='',source='admin'}={}){
+export async function deleteMemberProfile(churchId,memberId,{actorId='',source='admin',allowSelf=false}={}){
   const member=await getDoc(tableNames.members,churchId,memberId);
   if(!member)throw Object.assign(new Error('Member not found'),{statusCode:404,code:'MEMBER_NOT_FOUND'});
   if(member.churchAdministrator===true)throw Object.assign(new Error('The Church Administrator profile cannot be deleted.'),{statusCode:409,code:'OWNER_DELETE_FORBIDDEN'});
-  if(actorId&&member.id===actorId)throw Object.assign(new Error('You cannot delete your own signed-in member profile.'),{statusCode:409,code:'SELF_DELETE_FORBIDDEN'});
+  if(actorId&&member.id===actorId&&!allowSelf)throw Object.assign(new Error('You cannot delete your own signed-in member profile.'),{statusCode:409,code:'SELF_DELETE_FORBIDDEN'});
   const settings=await getDoc(tableNames.settings,churchId,'church')||{};
   if(settings.currentProgramAdminId===member.id)throw Object.assign(new Error('Change the responsible program administrator before deleting this profile.'),{statusCode:409,code:'PROGRAM_ADMIN_DELETE_FORBIDDEN'});
 

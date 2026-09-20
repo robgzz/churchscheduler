@@ -7,6 +7,7 @@ import { loginIpLimiter, loginAccountLimiter } from '../security/rateLimit.js';
 import { securityEvent } from '../security/audit.js';
 import { checkLoginThrottle, recordLoginFailure, clearLoginFailure } from '../security/loginThrottle.js';
 import { requireLogin } from '../auth/middleware.js';
+import { deleteMemberProfile } from '../services/memberDeletion.js';
 
 export const authRouter=express.Router();
 authRouter.post('/login',loginIpLimiter,loginAccountLimiter,async(req,res)=>{
@@ -40,5 +41,20 @@ authRouter.post('/change-password',requireLogin,async(req,res)=>{
 });
 
 authRouter.post('/logout-all',requireLogin,async(req,res)=>{await destroyAllUserSessions(req.churchId,req.identity.user.username);clearSessionCookie(res);await securityEvent(req,'logout_all',{username:req.identity.user.username});res.json({ok:true});});
+
+
+authRouter.delete('/account',requireLogin,async(req,res,next)=>{
+  try{
+    const current=String(req.body?.currentPassword||'');
+    const user=await getDoc(tableNames.users,req.churchId,req.identity.user.username);
+    if(!user || !await verifyPassword(current,user.password)) return res.status(400).json({error:'Current password is incorrect.',code:'CURRENT_PASSWORD_REQUIRED'});
+    if(!req.identity.member) return res.status(400).json({error:'Member profile not found.',code:'MEMBER_NOT_FOUND'});
+    const result=await deleteMemberProfile(req.churchId,req.identity.member.id,{actorId:req.identity.member.id,source:'member_self_delete',allowSelf:true});
+    clearSessionCookie(res);
+    await securityEvent(req,'account_deleted',{username:req.identity.user.username,memberId:req.identity.member.id});
+    res.json({ok:true,deletedMemberId:result.deletedMemberId});
+  }catch(e){next(e);}
+});
+
 
 function safeUser(u){const {password,...safe}=u; return safe;}

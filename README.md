@@ -1,4 +1,4 @@
-# Westbury Church Hub V6.2.0
+# Westbury Church Hub V6.3.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
 
@@ -284,6 +284,11 @@ See `docs/AZURE-COMMUNICATION-SERVICES-V3.0.md` for the complete staged procedur
 
 ## V3.2 additions
 See `RELEASE-NOTES-V3.3.0.md` for Program Admin on Duty, operational notifications, song-selection history, and same-service song de-duplication.
+
+
+## V6.3.0 Apple review readiness / schedule readability
+
+V6.3.0 adds a guarded self-service account deletion flow for non-owner accounts, public Support and Privacy Policy links in Profile, and collapses every worship program card by default so the Schedule page is easier to scan. See `RELEASE-NOTES-V6.3.0.md`.
 
 ## V6.2.0 reliability / iOS readiness
 
