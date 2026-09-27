@@ -22,7 +22,18 @@ test('V6.4 anthology contains authoritative titles and lyrics for every uploaded
  assert.ok(songs.every(s=>s.title&&s.markdown.startsWith(`# ${s.number} — ${s.title}\n`)&&s.markdown.length>45));
  assert.ok(songs.every(s=>index.includes(`**${s.number}** — ${s.title}`)));
  const files=fs.readdirSync(path.join(root,'anthology/markdown')).filter(x=>x.endsWith('.md'));
- assert.equal(files.length,226);
+ const manifest=JSON.parse(read('anthology/markdown-manifest.json'));
+ assert.equal(manifest.length,songs.length);
+ const expected=new Set(manifest.map(entry=>entry.filename));
+ const obsolete=files.filter(filename=>!expected.has(filename));
+ assert.deepEqual(obsolete,[],`Obsolete Markdown files must be removed: ${obsolete.join(', ')}`);
+ assert.equal(files.length,songs.length);
+ for(const entry of manifest){
+  const song=byNumber.get(entry.number);
+  assert.ok(song,`Unknown song number ${entry.number} in Markdown manifest`);
+  assert.equal(entry.title,song.title);
+  assert.equal(read(path.join('anthology/markdown',entry.filename)),song.markdown);
+ }
 });
 
 test('all supplied #69–#99 are present and #68 standalone overrides defective source',()=>{
