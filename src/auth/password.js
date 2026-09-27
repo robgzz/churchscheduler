@@ -13,8 +13,8 @@ export async function hashPassword(password){
   if (String(password || '').length < 10) throw new Error('Password must be at least 10 characters.');
   return hashCore(password);
 }
-// Initial roster/access-request password only. It is intentionally simple because
-// the account is marked mustChangePassword and the member must choose a 10+ character password.
+// Initial roster/access-request password only. A member may keep the initial
+// password or choose a stronger password voluntarily from their profile.
 export async function hashInitialPassword(password='welcome'){
   if(!String(password||'')) throw new Error('Initial password is required.');
   return hashCore(password);

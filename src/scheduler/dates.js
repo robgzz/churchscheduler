@@ -70,3 +70,12 @@ export function occurrenceDates(service, startIso, endIso){
   }
   return out;
 }
+
+export function selectedWeekWindow(window,weekOffset){
+  if(!Number.isInteger(weekOffset)||weekOffset<0||weekOffset>2)throw new RangeError('Select week 0, 1, or 2');
+  // After Sunday 7 PM the visible week rolls to Monday-Sunday so that
+  // Wednesday class is not omitted while next Sunday becomes the worship day.
+  const first=startOfWeek(window.start,window.rolledAfterSundayService?1:0);
+  const start=addDays(first,weekOffset*7);
+  return {start,end:addDays(start,6),weekOffset};
+}

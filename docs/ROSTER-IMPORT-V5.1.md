@@ -23,3 +23,5 @@ An export can be re-imported authoritatively using `Ministries`, `Services`, `As
 
 ## Safety
 Import never resets an existing password. Account provisioning is idempotent. All persisted changes remain scoped to the current church/tenant.
+
+**V6.4.1 update:** The earlier mandatory password-change requirement was removed. The initial password remains `welcome`, but subsequent changes are optional from each member's profile.

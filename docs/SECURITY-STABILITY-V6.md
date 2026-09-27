@@ -32,3 +32,5 @@ Language interpretation never grants authority. Protected writes continue throug
 - Container shutdown drains active HTTP requests on SIGTERM/SIGINT.
 - Version reporting comes from one source.
 - No new Azure service dependency is introduced.
+
+**V6.4.1 update:** The historical mandatory-change policy described above has been superseded. Members may now retain the initial `welcome` password and optionally change it in Profile → Security; new accounts have `mustChangePassword:false`, and legacy flags no longer force profile navigation.

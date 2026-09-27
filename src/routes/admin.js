@@ -7,10 +7,10 @@ import { hashPassword } from '../auth/password.js';
 import { provisionMemberAccount, emailInitialCredentials } from '../services/accountProvisioning.js';
 import { destroyAllUserSessions } from '../auth/sessions.js';
 import { securityEvent } from '../security/audit.js';
-import { generateThreeWeekSchedule, pickReplacement } from '../scheduler/engine.js';
+import { generateScheduleWeek, pickReplacement } from '../scheduler/engine.js';
 import { listHistory, appendHistory } from '../scheduler/history.js';
 import { listProgramViews } from '../services/programs.js';
-import { threeWeekWindow } from '../scheduler/dates.js';
+import { threeWeekWindow, selectedWeekWindow } from '../scheduler/dates.js';
 import { enqueueAnnouncement } from '../communications/notifications.js';
 import { auditRows, toCsv, toExcelXml, toPdf } from '../services/auditExport.js';
 import { syncProgramStatus } from '../communications/programAdmin.js';
@@ -164,7 +164,7 @@ adminRouter.post('/people/:id/provision-account',async(req,res)=>{
   if(!username) return res.status(400).json({error:'Username required'});
   if(password.length<10) return res.status(400).json({error:'Temporary password must be at least 10 characters.'});
   member.username=username; await putDoc(tableNames.members,req.churchId,member.id,member,{username,active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
-  const user={id:username,username,memberId:member.id,active:member.active!==false,groups:member.groups||[],adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true,password:await hashPassword(password),mustChangePassword:req.body.mustChangePassword!==false,createdAt:nowIso()};
+  const user={id:username,username,memberId:member.id,active:member.active!==false,groups:member.groups||[],adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true,password:await hashPassword(password),mustChangePassword:false,createdAt:nowIso()};
   await putDoc(tableNames.users,req.churchId,username,user,{memberId:member.id,active:user.active,adminAccess:user.adminAccess,churchAdministrator:user.churchAdministrator});
   await destroyAllUserSessions(req.churchId,username); await securityEvent(req,'account_provisioned',{username,memberId:member.id});
   res.status(201).json({ok:true,username});
@@ -181,7 +181,16 @@ adminRouter.get('/children',async(req,res)=>{const [children,checkIns,members]=a
 adminRouter.post('/children/check-ins/:id/pickup',async(req,res,next)=>{try{const row=await getDoc(tableNames.childCheckIns,req.churchId,req.params.id);if(!row)return res.status(404).json({error:'Check-in not found'});if(!['checked_in','pickup_requested'].includes(row.status))return res.status(409).json({error:'Child is not currently checked in'});const reason=String(req.body?.overrideReason||'').trim();if(reason.length<10)return res.status(400).json({error:'An override reason of at least 10 characters is required.'});row.status='picked_up';row.pickupAt=nowIso();row.releasedBy=req.identity?.member?.id||'';row.receivedByName=String(req.body?.recipientName||'').trim()||'Administrative override';row.overrideReason=reason;delete row.pickupCodeHash;delete row.pickupCodeEncrypted;await putDoc(tableNames.childCheckIns,req.churchId,row.id,row,{memberId:row.memberId,childId:row.childId,status:row.status,dateISO:row.dateISO||'',careArea:row.careArea||''});await appendHistory(req.churchId,{eventType:'children.pickup.override',memberId:row.memberId,dateISO:row.dateISO||'',source:'admin',details:{childId:row.childId,childName:row.childName,checkInId:row.id,releasedBy:row.releasedBy,receivedByName:row.receivedByName,reason}});res.json({ok:true,row});}catch(e){next(e);}});
 
 adminRouter.use('/schedule',requireModule('worship'));
-adminRouter.post('/schedule/generate',async(req,res)=>res.json(await generateThreeWeekSchedule(req.churchId,{source:'admin'})));
+adminRouter.post('/schedule/generate',async(req,res,next)=>{try{
+  const weekOffset=Number(req.body?.weekOffset);
+  if(!Number.isInteger(weekOffset)||weekOffset<0||weekOffset>2)return res.status(400).json({error:'Choose week 0, 1 or 2'});
+  res.json(await generateScheduleWeek(req.churchId,{weekOffset,regenerate:true,source:'admin',requestedBy:req.identity?.member?.id||''}));
+}catch(e){next(e);}});
+adminRouter.get('/schedule/weeks',async(req,res)=>{
+  const settings=await getDoc(tableNames.settings,req.churchId,'church')||{timezone:'America/Chicago',weekStartsOn:0};
+  const window=threeWeekWindow(settings.timezone||'America/Chicago',Number(settings.weekStartsOn??0));
+  res.json([0,1,2].map(weekOffset=>selectedWeekWindow(window,weekOffset)));
+});
 adminRouter.get('/schedule/programs',async(req,res)=>{
   const settings=await getDoc(tableNames.settings,req.churchId,'church') || {timezone:'America/Chicago',weekStartsOn:0};
   const w=threeWeekWindow(settings.timezone||'America/Chicago',Number(settings.weekStartsOn??0));

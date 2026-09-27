@@ -68,10 +68,10 @@ test('first deployment reconciles by title not by obsolete number, preserving hi
  assert.match(seed,/reconcileAuthoritativeSongs\(churchId,songDoc\.songs/);
 });
 
-test('the default password remains welcome, with mandatory change on first login',()=>{
+test('the default password remains welcome, with optional change from profile',()=>{
  const provision=read('src/services/accountProvisioning.js');
  assert.match(provision,/initialPassword='welcome'/);
- assert.match(provision,/mustChangePassword/);
+ assert.match(provision,/mustChangePassword:false/);
  assert.match(read('src/routes/admin.js'),/initialPassword:'welcome'/);
 });
 
