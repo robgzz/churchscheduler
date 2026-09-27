@@ -47,6 +47,10 @@ function nthWeekday(year, month1, dayOfWeek, ordinal){
 export function occurrenceDates(service, startIso, endIso){
   const r=service.recurrence || {frequency:'weekly',weekday:0};
   const out=[];
+  if (r.frequency==='once') return /^\d{4}-\d{2}-\d{2}$/.test(r.date||'') && r.date>=startIso && r.date<=endIso ? [r.date] : [];
+  if (r.startDate) startIso=startIso>r.startDate?startIso:r.startDate;
+  if (r.endDate) endIso=endIso<r.endDate?endIso:r.endDate;
+  if(startIso>endIso)return [];
   if (r.frequency==='daily'){
     for(let d=startIso; d<=endIso; d=addDays(d,1)) out.push(d);
     return out;
@@ -55,15 +59,30 @@ export function occurrenceDates(service, startIso, endIso){
     const target=Number(r.weekday ?? 0); let d=startIso;
     while(weekday(d)!==target && d<=endIso) d=addDays(d,1);
     const step=7*Math.max(1,Number(r.intervalWeeks||1));
+    if(r.frequency==='every_n_weeks' && r.startDate){
+      const anchor=r.startDate;
+      const days=Math.floor((Date.parse(`${d}T12:00:00Z`)-Date.parse(`${anchor}T12:00:00Z`))/86400000);
+      const weeks=Math.floor(days/7);
+      const drift=((weeks%Math.max(1,Number(r.intervalWeeks||1)))+Math.max(1,Number(r.intervalWeeks||1)))%Math.max(1,Number(r.intervalWeeks||1));
+      if(drift)d=addDays(d,(Math.max(1,Number(r.intervalWeeks||1))-drift)*7);
+    }
     while(d<=endIso){ out.push(d); d=addDays(d,step); }
     return out;
   }
   if (r.frequency==='monthly'){
     const start=new Date(`${startIso}T12:00:00Z`); let y=start.getUTCFullYear(), m=start.getUTCMonth()+1;
+    const everyMonths=Math.max(1,Number(r.everyMonths||1));
+    if(r.startDate&&everyMonths>1){
+      const anchor=new Date(`${r.startDate}T12:00:00Z`);
+      const delta=(y-anchor.getUTCFullYear())*12 + m-(anchor.getUTCMonth()+1);
+      const drift=((delta%everyMonths)+everyMonths)%everyMonths;
+      m+=drift?(everyMonths-drift):0;
+      while(m>12){m-=12;y++;}
+    }
     while(true){
       const d=nthWeekday(y,m,Number(r.weekday??0),Number(r.ordinal||1));
       if (d && d>=startIso && d<=endIso) out.push(d);
-      m += Math.max(1,Number(r.everyMonths||1)); while(m>12){m-=12;y++;}
+      m += everyMonths; while(m>12){m-=12;y++;}
       if (`${y}-${String(m).padStart(2,'0')}-01`>endIso) break;
     }
     return out;

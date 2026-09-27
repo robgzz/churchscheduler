@@ -37,5 +37,53 @@
     },
     "templateId": "tpl_wednesday_class",
     "labelEn": "Wednesday Class"
+  },
+  {
+    "id": "svc_funeral",
+    "label": "Funeral",
+    "labelEn": "Funeral",
+    "labelEs": "Funeral",
+    "active": false,
+    "category": "special",
+    "startTime": "10:00",
+    "location": "",
+    "address": "",
+    "recurrence": {
+      "frequency": "once",
+      "date": ""
+    },
+    "templateId": "tpl_funeral"
+  },
+  {
+    "id": "svc_fellowship",
+    "label": "Westbury Fellowship",
+    "labelEn": "Westbury Fellowship",
+    "labelEs": "Confraternidad Westbury",
+    "active": false,
+    "category": "special",
+    "startTime": "10:00",
+    "location": "",
+    "address": "",
+    "recurrence": {
+      "frequency": "once",
+      "date": ""
+    },
+    "templateId": "tpl_fellowship"
+  },
+  {
+    "id": "svc_campaign",
+    "label": "Westbury Campaign",
+    "labelEn": "Westbury Campaign",
+    "labelEs": "Campaña Westbury",
+    "active": false,
+    "category": "special",
+    "startTime": "10:00",
+    "location": "",
+    "address": "",
+    "recurrence": {
+      "frequency": "once",
+      "date": ""
+    },
+    "templateId": "tpl_campaign"
   }
 ]

@@ -203,3 +203,14 @@ html[data-theme="dark"] .home-welcome{background:linear-gradient(125deg,#102033,
 .hymn-reader-modal { max-width:760px; }
 .hymn-markdown-editor { min-height:260px; resize:vertical; line-height:1.5; }
 .hymn-library-entry { margin-bottom:16px; }
+
+/* V6.6.1: compact, per-position song controls on mobile and desktop. */
+.song-section-actions{display:grid;gap:10px;margin:12px 0}
+.song-section-action{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border,#40546b);border-radius:14px;min-width:0}
+.song-section-action .grow{min-width:0;flex:1}
+.song-section-action strong,.song-section-action small{display:block}
+.song-section-action small{opacity:.8;margin:3px 0}
+.song-section-action button{flex-shrink:0}
+.song-section-action.pending{border-style:dashed}
+.song-section-action .selected-songs{margin-top:8px}
+@media(max-width:580px){.song-section-action{align-items:stretch;flex-direction:column}.song-section-action button{width:100%}}

@@ -1,3 +1,5 @@
+import {songSectionForItem,songPartsFor} from '../services/songSections.js';
+
 export function assignmentUnits(template){
   const units=new Map();
   for (const item of template?.items || []){
@@ -18,7 +20,9 @@ export function renderProgramItems(template, assignmentsByKey, membersById, song
     assignees:(item.assignmentKeys || []).map(key=>{
       const a=assignmentsByKey[key];
       const member=a?.currentMemberId ? membersById.get(a.currentMemberId) : null;
-      const songs=(a?.songIds||[]).map(id=>songsById.get(id)).filter(Boolean);
+      const section=songSectionForItem(item);
+      const songIds=songPartsFor(a)[section]||[];
+      const songs=songIds.map(id=>songsById.get(id)).filter(Boolean);
       return {
         assignmentId:a?.id || null,
         assignmentKey:key,
@@ -26,7 +30,8 @@ export function renderProgramItems(template, assignmentsByKey, membersById, song
         fullName:member?.fullName || 'Unfilled',
         status:a?.status || 'unfilled',
         ministryId:a?.ministryId || item.ministryId,
-        songIds:a?.songIds||[],
+        songIds,
+        songSection:section,
         songs
       };
     })

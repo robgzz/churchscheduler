@@ -1,3 +1,4 @@
+import {songSectionsFor,songPartsFor,allSongIds} from '../services/songSections.js';
 import express from 'express';
 import crypto from 'node:crypto';
 import { requireLogin, requireGroup, requireAnyGroup } from '../auth/middleware.js';
@@ -6,7 +7,7 @@ import { putDoc, listDocs, getDoc, deleteDoc, nowIso, createDoc } from '../stora
 import { myAssignments, listProgramViews } from '../services/programs.js';
 import { addUnavailability } from '../services/unavailability.js';
 import { requestReplacement } from '../services/replacements.js';
-import { threeWeekWindow } from '../scheduler/dates.js';
+import { threeWeekWindow, addDays } from '../scheduler/dates.js';
 import { appendHistory } from '../scheduler/history.js';
 import { enqueueAdminAlert } from '../communications/notifications.js';
 import { songSelectionContext, validateNoDuplicateSongsInProgram } from '../services/songSelection.js';
@@ -42,6 +43,12 @@ memberRouter.get('/programs',requireModule('worship'),requireAnyGroup('members',
   const settings=await getDoc(tableNames.settings,req.churchId,'church') || {timezone:'America/Chicago',weekStartsOn:0};
   const w=threeWeekWindow(settings.timezone||'America/Chicago',Number(settings.weekStartsOn??0));
   res.json(await listProgramViews(req.churchId,{from:w.start,to:w.end}));
+});
+memberRouter.get('/special-programs',requireModule('worship'),requireAnyGroup('members','worship'),async(req,res)=>{
+  const settings=await getDoc(tableNames.settings,req.churchId,'church')||{timezone:'America/Chicago'};
+  const today=threeWeekWindow(settings.timezone||'America/Chicago').today;
+  const until=addDays(today,366);
+  res.json((await listProgramViews(req.churchId,{from:today,to:until,category:'special'})).filter(p=>p.service?.category==='special'&&p.service?.active!==false));
 });
 memberRouter.post('/unavailability',requireGroup('worship'),async(req,res)=>res.status(201).json(await addUnavailability(req.churchId,req.identity.member.id,req.body)));
 memberRouter.post('/replacement/:assignmentId',requireGroup('worship'),async(req,res)=>res.json(await requestReplacement(req.churchId,req.identity.member.id,req.params.assignmentId,{reason:'member_request'})));
@@ -102,22 +109,30 @@ memberRouter.put('/assignments/:assignmentId/songs',requireGroup('worship'),asyn
   if(assignment.ministryId!=='ministry_songs') return res.status(409).json({error:'Songs can only be selected for a Cantos assignment',code:'SONG_ASSIGNMENT_ONLY'});
   if(assignment.status!=='scheduled') return res.status(409).json({error:'Only scheduled assignments can be updated',code:'ASSIGNMENT_NOT_SCHEDULED'});
 
-  const requested=[...new Set((Array.isArray(req.body.songIds)?req.body.songIds:[]).map(String).filter(Boolean))].slice(0,25);
+  const program=await getDoc(tableNames.programs,req.churchId,assignment.programId);
+  const template=program?await getDoc(tableNames.templates,req.churchId,program.templateId):null;
+  const sections=songSectionsFor(template,assignment.assignmentKey);
+  const sectionKey=String(req.body?.section||'main');
+  if(!sections.some(section=>section.key===sectionKey))return res.status(400).json({error:'Invalid song section for this assignment',code:'INVALID_SONG_SECTION'});
+  if(!Array.isArray(req.body?.songIds)||req.body?.songIds.length>25||req.body?.songIds.some(id=>typeof id!=='string'))return res.status(400).json({error:'Invalid song list',code:'INVALID_SONGS'});
+  const requested=[...new Set(req.body?.songIds.filter(Boolean))];
+  if(sectionKey!=='main'&&requested.length>1)return res.status(400).json({error:'Select only one song for this section.',code:'INVALID_SONGS'});
   const songs=await listDocs(tableNames.songs,req.churchId,{max:2000});
   const songMap=new Map(songs.filter(s=>s.active!==false).map(s=>[s.id,s]));
   if(requested.some(id=>!songMap.has(id))) return res.status(400).json({error:'One or more selected songs are invalid or inactive',code:'INVALID_SONGS'});
-  try{await validateNoDuplicateSongsInProgram(req.churchId,assignment,requested);}catch(e){return res.status(e.statusCode||409).json({error:e.message,code:e.code||'DUPLICATE_SERVICE_SONGS',conflicts:e.conflicts||[]});}
+  try{await validateNoDuplicateSongsInProgram(req.churchId,assignment,requested,sectionKey);}catch(e){return res.status(e.statusCode||409).json({error:e.message,code:e.code||'DUPLICATE_SERVICE_SONGS',conflicts:e.conflicts||[]});}
 
-  assignment.songIds=requested;
+  assignment.songParts={...songPartsFor(assignment),[sectionKey]:requested};
+  assignment.songIds=assignment.songParts.main; // Compatibility for existing programs and API clients.
   assignment.songsUpdatedAt=nowIso();
   assignment.songsUpdatedBy=req.identity.member.id;
   assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:assignment.currentMemberId||'',ministryId:assignment.ministryId,programId:assignment.programId});
-  await appendHistory(req.churchId,{eventType:'songs.updated',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId:req.identity.member.id,dateISO:assignment.dateISO,details:{songIds:requested}});
+  await appendHistory(req.churchId,{eventType:'songs.updated',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId:req.identity.member.id,dateISO:assignment.dateISO,details:{songIds:requested,section:sectionKey}});
   const selectedSongs=requested.map(id=>songMap.get(id)).filter(Boolean); const songSummary=selectedSongs.map(x=>`${x.number?`${x.number} - `:''}${x.titleEs||x.title||x.titleEn||''}`).join(', ');
-  await notifyProgramAdmin(req.churchId,{eventKey:`songs-submitted:${assignment.id}:${assignment.songsUpdatedAt}`,type:'songs.submitted',titleEn:'Songs submitted',titleEs:'Cantos entregados',messageEn:`${req.identity.member.fullName} submitted songs for ${assignment.dateISO}${songSummary?`: ${songSummary}`:''}.`,messageEs:`${req.identity.member.fullName} entregó los cantos para ${assignment.dateISO}${songSummary?`: ${songSummary}`:''}.`,metadata:{assignmentId:assignment.id,programId:assignment.programId,dateISO:assignment.dateISO,songIds:requested},channels:['sms','push']});
+  await notifyProgramAdmin(req.churchId,{eventKey:`songs-submitted:${assignment.id}:${assignment.songsUpdatedAt}`,type:'songs.submitted',titleEn:'Songs submitted',titleEs:'Cantos entregados',messageEn:`${req.identity.member.fullName} submitted songs for ${assignment.dateISO}${songSummary?`: ${songSummary}`:''}.`,messageEs:`${req.identity.member.fullName} entregó los cantos para ${assignment.dateISO}${songSummary?`: ${songSummary}`:''}.`,metadata:{assignmentId:assignment.id,programId:assignment.programId,dateISO:assignment.dateISO,songIds:requested,section:sectionKey},channels:['sms','push']});
   await syncProgramStatus(req.churchId,{programId:assignment.programId});
-  res.json({ok:true,assignmentId:assignment.id,songIds:requested,songs:requested.map(id=>songMap.get(id))});
+  res.json({ok:true,assignmentId:assignment.id,section:sectionKey,songIds:requested,songs:requested.map(id=>songMap.get(id))});
 });
 
 memberRouter.put('/contact',async(req,res)=>{

@@ -1,3 +1,4 @@
+import {allSongIds} from './songSections.js';
 import { tableNames } from '../config.js';
 import { listDocs } from '../storage/repository.js';
 import { listHistory } from '../scheduler/history.js';
@@ -10,7 +11,7 @@ export async function auditRows(churchId,filters={}){
   const mm=new Map(members.map(m=>[m.id,m.fullName])),sm=new Map(services.map(s=>[s.id,s.labelEn||s.labelEs||s.label])),xm=new Map(ministries.map(m=>[m.id,m.labelEn||m.labelEs||m.label])),am=new Map(assignments.map(a=>[a.id,a])),pm=new Map(programs.map(p=>[p.id,p])),tm=new Map(templates.map(t=>[t.id,t])),songm=new Map(songs.map(s=>[s.id,`#${s.number||''} ${s.titleEn||s.titleEs||s.title||''}`.trim()]));
   const decisions=new Map();for(const h of history)if(h.eventType==='scheduler.decision')decisions.set(`${h.programId||''}|${h.assignmentKey||''}`,h);
   return history.map(h=>{
-    const a=am.get(h.assignmentId)||{};const p=pm.get(h.programId||a.programId)||{};const serviceId=h.serviceId||a.serviceId||p.serviceId||String(h.programId||'').split('__')[0]||'';const tpl=tm.get(p.templateId)||{};const memberId=h.memberId||a.currentMemberId||'';const decision=decisions.get(`${h.programId||a.programId||''}|${h.assignmentKey||a.assignmentKey||''}`);const score=scoreFor(decision,memberId);const songIds=h.details?.songIds||a.songIds||[];
+    const a=am.get(h.assignmentId)||{};const p=pm.get(h.programId||a.programId)||{};const serviceId=h.serviceId||a.serviceId||p.serviceId||String(h.programId||'').split('__')[0]||'';const tpl=tm.get(p.templateId)||{};const memberId=h.memberId||a.currentMemberId||'';const decision=decisions.get(`${h.programId||a.programId||''}|${h.assignmentKey||a.assignmentKey||''}`);const score=scoreFor(decision,memberId);const songIds=h.details?.songIds||allSongIds(a);
     return ({
       When:h.occurredAt||'',ServiceDate:h.dateISO||a.dateISO||p.dateISO||'',ServiceTime:p.startTime||'',Event:safe(h.eventType),Who:mm.get(memberId)||memberId||'System',
       Service:sm.get(serviceId)||serviceId||'',Assignment:assignmentLabel(tpl,h.assignmentKey||a.assignmentKey||''),AssignmentKey:h.assignmentKey||a.assignmentKey||'',Ministry:xm.get(h.ministryId||a.ministryId)||h.ministryId||a.ministryId||'',

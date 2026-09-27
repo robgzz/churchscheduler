@@ -23,7 +23,7 @@ export async function deleteMemberProfile(churchId,memberId,{actorId='',source='
   let unfilledAssignments=0;
   for(const a of futureAssignments){
     if(a.status==='completed'||String(a.dateISO||'')<today)continue;
-    a.originalMemberId=a.originalMemberId||member.id;a.currentMemberId=null;a.status='unfilled';a.locked=false;a.songIds=[];a.songsUpdatedAt=null;a.songsUpdatedBy=null;a.updatedAt=nowIso();
+    a.originalMemberId=a.originalMemberId||member.id;a.currentMemberId=null;a.status='unfilled';a.locked=false;a.songIds=[];a.songParts={};a.songsUpdatedAt=null;a.songsUpdatedBy=null;a.updatedAt=nowIso();
     await putDoc(tableNames.assignments,churchId,a.id,a,{serviceId:a.serviceId,dateISO:a.dateISO,status:a.status,currentMemberId:'',ministryId:a.ministryId,programId:a.programId});
     await appendHistory(churchId,{eventType:'assignment.unfilled',programId:a.programId,assignmentId:a.id,assignmentKey:a.assignmentKey,ministryId:a.ministryId,memberId:'',previousMemberId:member.id,dateISO:a.dateISO,source:'member_profile_delete',reason:'member_profile_deleted'});
     unfilledAssignments++;

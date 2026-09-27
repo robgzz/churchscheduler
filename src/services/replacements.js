@@ -20,7 +20,7 @@ export async function requestReplacement(churchId,memberId,assignmentId,{reason=
   assignment.currentMemberId=selected?.id || null;
   assignment.assignedAt=selected?nowIso():null;
   assignment.appNotificationAt=assignment.assignedAt;
-  assignment.songIds=[];
+  assignment.songIds=[];assignment.songParts={};
   assignment.songsUpdatedAt=null;
   assignment.songsUpdatedBy=null;
   assignment.status=selected?'scheduled':'unfilled';

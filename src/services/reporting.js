@@ -1,3 +1,4 @@
+import {allSongIds} from './songSections.js';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import { tableNames, config } from '../config.js';
@@ -38,7 +39,7 @@ export async function buildReport(churchId,type,{from='',to=''}={}){
     summary=[['Active members (current)',members.filter(x=>x.active!==false).length],['Worship members (current)',members.filter(x=>(x.groups||[]).includes('worship')&&x.active!==false).length],['Assignments',af.length],['Unfilled assignments',af.filter(x=>x.status==='unfilled').length],['Replacements',hf.filter(x=>x.eventType==='replacement.requested').length],['Announcements/Bulletins',cf.length],['Visitors',vf.filter(x=>x.kind==='visitor_contact').length],['Prayer petitions',pf.length],['Child check-in visits',kif.length],['Unique children',uniqueChildren],['Currently in care',checkIns.filter(x=>['checked_in','pickup_requested'].includes(x.status)).length],['Notification attempts',attempted],['Notifications skipped',nf.filter(x=>x.status==='skipped').length],['Notification failures',nf.filter(x=>x.status==='failed').length]];
     rows=summary.map(([Metric,Value])=>({Metric,Value}));
   } else if(type==='worship-participation'){
-    rows=af.map(a=>({Date:a.dateISO||'',Service:sm.get(a.serviceId)||a.serviceId||'',Ministry:xm.get(a.ministryId)||a.ministryId||'',Member:mm.get(a.currentMemberId)||a.currentMemberId||'Unfilled',Status:a.status||'',OriginalMember:mm.get(a.originalMemberId)||a.originalMemberId||'',ReplacementCount:(a.replacements||[]).length,Songs:(a.songIds||[]).length}));
+    rows=af.map(a=>({Date:a.dateISO||'',Service:sm.get(a.serviceId)||a.serviceId||'',Ministry:xm.get(a.ministryId)||a.ministryId||'',Member:mm.get(a.currentMemberId)||a.currentMemberId||'Unfilled',Status:a.status||'',OriginalMember:mm.get(a.originalMemberId)||a.originalMemberId||'',ReplacementCount:(a.replacements||[]).length,Songs:allSongIds(a).length}));
   } else if(type==='communications'){
     rows=nf.map(n=>({When:n.occurredAt||'',Channel:n.channel||'',Status:n.status||'',Member:mm.get(n.memberId)||n.memberId||'',Recipient:n.recipient||'',Event:n.eventKey||'',SuccessCount:n.metadata?.successCount??'',FailureCount:n.metadata?.failureCount??'',Reason:n.metadata?.reason||'',Error:n.error||''}));
   } else if(type==='announcements-bulletins'){

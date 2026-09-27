@@ -5,12 +5,13 @@ import { assignmentUnits } from './template.js';
 import { hardEligible } from './policy.js';
 import { rankCandidates, selectWithCoverage, DEFAULT_WEIGHTS } from './fairness.js';
 import { appendHistory } from './history.js';
+import { prioritizeFuneralTeachers } from '../services/specialServices.js';
 
 function idx(items){ return new Map(items.map(x=>[x.id,x])); }
 function programId(serviceId,dateISO){ return `${serviceId}__${dateISO}`; }
 function assignmentId(programIdValue,key){ return `${programIdValue}__${key}`; }
 
-async function loadSchedulingContext(churchId, settings, window){
+async function loadSchedulingContext(churchId, settings, window,activeServiceIds=null){
   const [members,completed,scheduled,events]=await Promise.all([
     listDocs(tableNames.members,churchId),
     listDocs(tableNames.assignments,churchId,{filter:`status eq 'completed' and dateISO ge '${addDays(window.today,-365)}'`,max:20000}),
@@ -26,9 +27,9 @@ async function loadSchedulingContext(churchId, settings, window){
     if (!rec.any || a.dateISO>String(rec.any).slice(0,10)) rec.any=a.dateISO;
     if (!rec.byMinistry[a.ministryId] || a.dateISO>String(rec.byMinistry[a.ministryId]).slice(0,10)) rec.byMinistry[a.ministryId]=a.dateISO;
   }
-  for (const a of scheduled){ if(a.currentMemberId){ futureCounts[a.currentMemberId]=(futureCounts[a.currentMemberId]||0)+1; const roleKey=`${a.currentMemberId}::${a.ministryId}`; rolePlannedCounts[roleKey]=(rolePlannedCounts[roleKey]||0)+1; } }
+  for (const a of scheduled){ if(activeServiceIds&&!activeServiceIds.has(a.serviceId))continue; if(a.currentMemberId){ futureCounts[a.currentMemberId]=(futureCounts[a.currentMemberId]||0)+1; const roleKey=`${a.currentMemberId}::${a.ministryId}`; rolePlannedCounts[roleKey]=(rolePlannedCounts[roleKey]||0)+1; } }
   for (const e of events){ if(e.penaltyEligible && e.memberId) replacementCounts[e.memberId]=(replacementCounts[e.memberId]||0)+1; }
-  return { members,completed,scheduled,completedCounts,roleCompletedCounts,rolePlannedCounts,futureCounts,lastServedByMember,replacementCounts,weights:settings?.algorithm?.weights || DEFAULT_WEIGHTS };
+  return { members,completed,scheduled:activeServiceIds?scheduled.filter(a=>activeServiceIds.has(a.serviceId)):scheduled,completedCounts,roleCompletedCounts,rolePlannedCounts,futureCounts,lastServedByMember,replacementCounts,weights:settings?.algorithm?.weights || DEFAULT_WEIGHTS };
 }
 
 function sameDayAssignments(allAssignments,dateISO){ return allAssignments.filter(a=>a.dateISO===dateISO && a.status==='scheduled'); }
@@ -53,32 +54,35 @@ function adjustScheduled(ctx,assignment,amount){
 }
 function pinnedAssignment(assignment){
   // Never silently discard an administrator's override or selected songs.
-  return assignment?.locked===true || (Array.isArray(assignment?.songIds)&&assignment.songIds.length>0);
+  return assignment?.locked===true || (Array.isArray(assignment?.songIds)&&assignment.songIds.length>0) || Object.values(assignment?.songParts||{}).some(x=>Array.isArray(x)&&x.length>0);
 }
 
 /** Manual generation replaces only unlocked, unsent song-free auto assignments in
  * the selected calendar week. Scheduled maintenance only fills missing seats. */
-export async function generateScheduleWeek(churchId,{weekOffset=0,regenerate=true,source='admin',requestedBy=''}={}){
+export async function generateScheduleWeek(churchId,{weekOffset=0,regenerate=true,source='admin',requestedBy='',specialServiceId='',specialDate=''}={}){
   if(!Number.isInteger(weekOffset)||weekOffset<0||weekOffset>2)throw Object.assign(new Error('weekOffset must be 0, 1, or 2'),{statusCode:400});
   const settings=await getDoc(tableNames.settings,churchId,'church') || {timezone:'America/Chicago',weekStartsOn:0,algorithm:{weights:DEFAULT_WEIGHTS}};
   const window=threeWeekWindow(settings.timezone || 'America/Chicago',Number(settings.weekStartsOn??0));
-  const week=selectedWeekWindow(window,weekOffset);
+  const week=specialDate ? {start:specialDate,end:specialDate,weekOffset} : selectedWeekWindow(window,weekOffset);
   const [services,templates]=await Promise.all([listDocs(tableNames.services,churchId),listDocs(tableNames.templates,churchId)]);
-  const templateMap=idx(templates),ctx=await loadSchedulingContext(churchId,settings,window);
+  const activeServiceIds=new Set(services.filter(s=>s.active!==false).map(s=>s.id));
+  const templateMap=idx(templates),ctx=await loadSchedulingContext(churchId,settings,window,activeServiceIds);
   const allAssignments=[...ctx.scheduled];
   const tasks=[];const affected=[];let protectedCount=0,reassigned=0,created=0,unfilled=0,unchanged=0;
-  for(const service of services.filter(s=>s.active!==false)){
+  for(const service of services.filter(s=>s.active!==false && (specialServiceId ? s.id===specialServiceId && s.category==='special' : s.category!=='special'))){
     const template=templateMap.get(service.templateId);if(!template)continue;
     for(const dateISO of occurrenceDates(service,week.start,week.end)){
       // Never edit services that have already occurred this week.
       if(dateISO<window.today)continue;
       const pid=programId(service.id,dateISO);
       const oldProgram=await getDoc(tableNames.programs,churchId,pid);
-      if(oldProgram?.locked===true){protectedCount++;continue;}
+      if(oldProgram?.locked===true&&oldProgram.status!=='canceled'){protectedCount++;continue;}
       const program=oldProgram||{id:pid,churchId,serviceId:service.id,templateId:template.id,dateISO,startTime:service.startTime,status:'scheduled',locked:false,createdAt:nowIso()};
+      if(program.status==='canceled'){program.status='scheduled';program.locked=false;}
+      program.startTime=service.startTime;
       const units=assignmentUnits(template);
       const existing=await Promise.all(units.map(u=>getDoc(tableNames.assignments,churchId,assignmentId(pid,u.key))));
-      const items=units.map((unit,i)=>({unit,previous:existing[i]}));
+      const items=units.map((unit,i)=>({unit,previous:existing[i]?.status==='canceled'?null:existing[i]}));
       for(const info of items){
         const current=info.previous;
         const preserve=!!current?.currentMemberId && (pinnedAssignment(current)||!regenerate);
@@ -107,7 +111,8 @@ export async function generateScheduleWeek(churchId,{weekOffset=0,regenerate=tru
       const {unit,previous}=open[openIndex];
       const aid=assignmentId(pid,unit.key);
       const candidates=ctx.members.filter(m=>hardEligible(m,{ministryId:unit.ministryId,serviceId:service.id,assignmentKey:unit.key,dateISO,assignedInProgram,sameDayAssignments:sameDayAssignments(allAssignments,dateISO)}));
-      const ranking=rankCandidates(candidates,{...ctx,ministryId:unit.ministryId,today:dateISO});
+      let ranking=rankCandidates(candidates,{...ctx,ministryId:unit.ministryId,today:dateISO});
+      if(service.id==='svc_funeral' && unit.ministryId==='ministry_class_teacher')ranking=prioritizeFuneralTeachers(ranking);
       // Look ahead at the remaining positions so a fair choice cannot steal
       // the only available person from another slot and leave it uncovered.
       const remainingCandidateIds=open.slice(openIndex+1).map(({unit:nextUnit})=>ctx.members.filter(m=>hardEligible(m,{
@@ -118,7 +123,7 @@ export async function generateScheduleWeek(churchId,{weekOffset=0,regenerate=tru
       const stamp=nowIso();
       const assignment={...previous,id:aid,churchId,programId:pid,serviceId:service.id,dateISO,assignmentKey:unit.key,ministryId:unit.ministryId,
         originalMemberId:selected?.id||null,currentMemberId:selected?.id||null,status:selected?'scheduled':'unfilled',locked:false,
-        replacements:previous?.replacements||[],songIds:[],songsUpdatedAt:null,songsUpdatedBy:null,
+        replacements:previous?.replacements||[],songIds:[],songParts:{},songsUpdatedAt:null,songsUpdatedBy:null,
         assignedAt:selected?.id===previousId?(previous?.assignedAt||stamp):stamp,
         appNotificationAt:selected?.id===previousId?(previous?.appNotificationAt||stamp):stamp,
         createdAt:previous?.createdAt||stamp,updatedAt:stamp};
@@ -137,7 +142,7 @@ export async function generateScheduleWeek(churchId,{weekOffset=0,regenerate=tru
     affected.push(pid);
   }
   const result={ok:true,week,weekOffset,programCount:affected.length,created,reassigned,unfilled,unchanged,protectedCount,generatedAt:nowIso(),source};
-  if(regenerate)await appendHistory(churchId,{eventType:'scheduler.week_generated',memberId:requestedBy,dateISO:week.start,source,details:result});
+  if(regenerate)await appendHistory(churchId,{eventType:specialServiceId?'scheduler.special_generated':'scheduler.week_generated',memberId:requestedBy,dateISO:week.start,source,details:{...result,specialServiceId}});
   return result;
 }
 
@@ -153,8 +158,11 @@ export async function completePastAssignments(churchId){
   const settings=await getDoc(tableNames.settings,churchId,'church') || {timezone:'America/Chicago'};
   const window=threeWeekWindow(settings.timezone || 'America/Chicago',Number(settings.weekStartsOn??0));
   const scheduled=await listDocs(tableNames.assignments,churchId,{filter:`status eq 'scheduled' and dateISO lt '${window.today}'`,max:5000});
+  const services=await listDocs(tableNames.services,churchId);
+  const activeServiceIds=new Set(services.filter(s=>s.active!==false).map(s=>s.id));
   let count=0;
   for (const a of scheduled){
+    if(!activeServiceIds.has(a.serviceId))continue;
     a.status='completed'; a.completedAt=nowIso(); a.updatedAt=nowIso();
     await putDoc(tableNames.assignments,churchId,a.id,a,{serviceId:a.serviceId,dateISO:a.dateISO,status:a.status,currentMemberId:a.currentMemberId || '',ministryId:a.ministryId,programId:a.programId});
     await appendHistory(churchId,{eventType:'assignment.completed',programId:a.programId,assignmentId:a.id,assignmentKey:a.assignmentKey,ministryId:a.ministryId,memberId:a.currentMemberId || '',dateISO:a.dateISO});

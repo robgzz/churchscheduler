@@ -13,7 +13,7 @@ test('V2.3 readiness requires filled assignments and song selections',()=>{
   assert.match(programs,/missingSongAssignments/);
   assert.match(programs,/ready:openAssignments\.length===0 && missingSongAssignments\.length===0/);
   assert.match(admin,/missingSongs/);
-  assert.match(app,/missingSongAssignments/);
+  assert.match(app,/missingSongSections/);
 });
 
 test('V2.3 supports audited admin manual override',()=>{

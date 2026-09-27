@@ -89,7 +89,8 @@
           "songs_a"
         ],
         "labelEs": "Cantos",
-        "labelEn": "Songs"
+        "labelEn": "Songs",
+        "songSection": "main"
       },
       {
         "id": "sw_reading",
@@ -109,7 +110,8 @@
           "songs_b"
         ],
         "labelEs": "Cantos",
-        "labelEn": "Songs"
+        "labelEn": "Songs",
+        "songSection": "main"
       },
       {
         "id": "sw_meditation",
@@ -130,7 +132,8 @@
         ],
         "linked": true,
         "labelEs": "Canto de invitación",
-        "labelEn": "Invitation Song"
+        "labelEn": "Invitation Song",
+        "songSection": "invitation"
       },
       {
         "id": "sw_petitions",
@@ -161,7 +164,8 @@
         ],
         "linked": true,
         "labelEs": "Canto de la cena",
-        "labelEn": "Communion Song"
+        "labelEn": "Communion Song",
+        "songSection": "communion"
       },
       {
         "id": "sw_offering_song",
@@ -172,7 +176,8 @@
         ],
         "linked": true,
         "labelEs": "Canto de la ofrenda",
-        "labelEn": "Offering Song"
+        "labelEn": "Offering Song",
+        "songSection": "offering"
       },
       {
         "id": "sw_close",
@@ -263,5 +268,84 @@
         "labelEn": "Closing Prayer and Announcements"
       }
     ]
+  },
+  {
+    "id": "tpl_funeral",
+    "serviceId": "svc_funeral",
+    "label": "Funeral Program",
+    "items": [
+      {
+        "id": "fun_open",
+        "label": "Bienvenida y Oración",
+        "ministryId": "ministry_preside",
+        "assignmentKeys": [
+          "opening"
+        ],
+        "labelEs": "Bienvenida y Oración",
+        "labelEn": "Welcome and Prayer"
+      },
+      {
+        "id": "fun_songs_a",
+        "label": "Cantos",
+        "ministryId": "ministry_songs",
+        "assignmentKeys": [
+          "songs_a"
+        ],
+        "labelEs": "Cantos",
+        "labelEn": "Songs"
+      },
+      {
+        "id": "fun_reading",
+        "label": "Lectura y Oración",
+        "ministryId": "ministry_scripture_prayer",
+        "assignmentKeys": [
+          "scripture_prayer"
+        ],
+        "labelEs": "Lectura y Oración",
+        "labelEn": "Scripture Reading and Prayer"
+      },
+      {
+        "id": "fun_songs_b",
+        "label": "Cantos",
+        "ministryId": "ministry_songs",
+        "assignmentKeys": [
+          "songs_b"
+        ],
+        "labelEs": "Cantos",
+        "labelEn": "Songs"
+      },
+      {
+        "id": "fun_class",
+        "label": "Clase",
+        "ministryId": "ministry_class_teacher",
+        "assignmentKeys": [
+          "class_teacher"
+        ],
+        "labelEs": "Clase",
+        "labelEn": "Class"
+      },
+      {
+        "id": "fun_close",
+        "label": "Oración final",
+        "ministryId": "ministry_closing_announcements",
+        "assignmentKeys": [
+          "closing_prayer"
+        ],
+        "labelEs": "Oración final",
+        "labelEn": "Closing Prayer"
+      }
+    ]
+  },
+  {
+    "id": "tpl_fellowship",
+    "serviceId": "svc_fellowship",
+    "label": "Westbury Fellowship Program",
+    "items": []
+  },
+  {
+    "id": "tpl_campaign",
+    "serviceId": "svc_campaign",
+    "label": "Westbury Campaign Program",
+    "items": []
   }
 ]

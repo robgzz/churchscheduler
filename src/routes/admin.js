@@ -10,7 +10,7 @@ import { securityEvent } from '../security/audit.js';
 import { generateScheduleWeek, pickReplacement } from '../scheduler/engine.js';
 import { listHistory, appendHistory } from '../scheduler/history.js';
 import { listProgramViews } from '../services/programs.js';
-import { threeWeekWindow, selectedWeekWindow } from '../scheduler/dates.js';
+import { threeWeekWindow, selectedWeekWindow, addDays, occurrenceDates } from '../scheduler/dates.js';
 import { enqueueAnnouncement } from '../communications/notifications.js';
 import { auditRows, toCsv, toExcelXml, toPdf } from '../services/auditExport.js';
 import { syncProgramStatus } from '../communications/programAdmin.js';
@@ -18,6 +18,7 @@ import { reportCatalog, buildReport, reportCsv, reportXlsx, reportPdf } from '..
 import { enqueue } from '../communications/notifications.js';
 import { requireModule } from '../modules/registry.js';
 import { deleteMemberProfile } from '../services/memberDeletion.js';
+import { validateService, validateTemplateItems, newServiceId } from '../services/specialServices.js';
 
 function fileSignatureOk(contentType,buf){
   if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
@@ -191,6 +192,11 @@ adminRouter.get('/schedule/weeks',async(req,res)=>{
   const window=threeWeekWindow(settings.timezone||'America/Chicago',Number(settings.weekStartsOn??0));
   res.json([0,1,2].map(weekOffset=>selectedWeekWindow(window,weekOffset)));
 });
+adminRouter.get('/schedule/special-programs',async(req,res)=>{
+  const settings=await getDoc(tableNames.settings,req.churchId,'church')||{timezone:'America/Chicago'};
+  const today=threeWeekWindow(settings.timezone||'America/Chicago').today;
+  res.json((await listProgramViews(req.churchId,{from:today,to:addDays(today,366),category:'special'})).filter(p=>p.service?.category==='special'));
+});
 adminRouter.get('/schedule/programs',async(req,res)=>{
   const settings=await getDoc(tableNames.settings,req.churchId,'church') || {timezone:'America/Chicago',weekStartsOn:0};
   const w=threeWeekWindow(settings.timezone||'America/Chicago',Number(settings.weekStartsOn??0));
@@ -226,7 +232,7 @@ adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
   if(!eligible && !manualOverride) return res.status(409).json({error:'Selected member is not eligible for this ministry/service/date.',code:'MANUAL_OVERRIDE_REQUIRED'});
   const previous=assignment.currentMemberId||'';
   if(!assignment.originalMemberId) assignment.originalMemberId=memberId;
-  assignment.currentMemberId=memberId; assignment.assignedAt=nowIso(); assignment.appNotificationAt=assignment.assignedAt; assignment.songIds=[]; assignment.songsUpdatedAt=null; assignment.songsUpdatedBy=null; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
+  assignment.currentMemberId=memberId; assignment.assignedAt=nowIso(); assignment.appNotificationAt=assignment.assignedAt; assignment.songIds=[]; assignment.songParts={}; assignment.songsUpdatedAt=null; assignment.songsUpdatedBy=null; assignment.status='scheduled'; assignment.locked=req.body.locked!==false; assignment.updatedAt=nowIso();
   await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:memberId,ministryId:assignment.ministryId,programId:assignment.programId});
   await appendHistory(req.churchId,{eventType:manualOverride&&!eligible?'assignment.admin_override':'assignment.admin_reassigned',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId,dateISO:assignment.dateISO,previousMemberId:previous,newMemberId:memberId,penaltyEligible:false,source:'admin',details:{manualOverride:manualOverride&&!eligible,eligibilityOverridden:manualOverride&&!eligible}});
   await syncProgramStatus(req.churchId,{programId:assignment.programId});
@@ -235,22 +241,83 @@ adminRouter.put('/schedule/assignments/:id',async(req,res)=>{
 
 
 adminRouter.get('/services',async(req,res)=>res.json({services:await listDocs(tableNames.services,req.churchId),templates:await listDocs(tableNames.templates,req.churchId),ministries:await listDocs(tableNames.ministries,req.churchId)}));
-adminRouter.post('/services',async(req,res)=>{
-  const id=req.body.id || `svc_${crypto.randomUUID().replace(/-/g,'').slice(0,10)}`; const templateId=`tpl_${id.slice(4)}`;
-  const service={id,label:String(req.body.labelEn||req.body.label||req.body.labelEs||'New Service'),labelEn:String(req.body.labelEn||req.body.label||req.body.labelEs||'New Service'),labelEs:String(req.body.labelEs||req.body.label||req.body.labelEn||'Nuevo Servicio'),active:true,startTime:String(req.body.startTime||'10:00'),recurrence:req.body.recurrence||{frequency:'weekly',weekday:0},templateId};
-  const template={id:templateId,serviceId:id,label:`${service.label} Program`,items:Array.isArray(req.body.items)?req.body.items:[]};
-  await putDoc(tableNames.services,req.churchId,id,service,{active:true,label:service.label}); await putDoc(tableNames.templates,req.churchId,templateId,template,{serviceId:id});
+adminRouter.post('/ministries',async(req,res,next)=>{try{
+  const labelEs=String(req.body?.labelEs||'').trim().slice(0,100),labelEn=String(req.body?.labelEn||'').trim().slice(0,100);
+  if(!labelEs||!labelEn)return res.status(400).json({error:'Both ministry labels required'});
+  const id=`ministry_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
+  const ministry={id,label:labelEs,labelEs,labelEn,active:true,createdAt:nowIso()};
+  await putDoc(tableNames.ministries,req.churchId,id,ministry,{active:true,label:labelEs});
+  await appendHistory(req.churchId,{eventType:'ministry.created',memberId:req.identity?.member?.id||'',source:'admin',details:{id,labelEs}});
+  res.status(201).json(ministry);
+}catch(e){next(e);}});
+adminRouter.post('/services',async(req,res,next)=>{try{
+  const id=newServiceId(),templateId=`tpl_${id.slice(4)}`;
+  const data=validateService(req.body,{forceSpecial:req.body?.category==='special'});
+  const ministries=await listDocs(tableNames.ministries,req.churchId);
+  const items=validateTemplateItems(req.body.items||[],ministries);
+  if(data.category==='special' && data.active && items.length===0)return res.status(400).json({error:'Configure positions before activating'});
+  const service={...data,id,templateId,createdAt:nowIso()};
+  const template={id:templateId,serviceId:id,label:`${service.label} Program`,items};
+  await putDoc(tableNames.templates,req.churchId,templateId,template,{serviceId:id});
+  await putDoc(tableNames.services,req.churchId,id,service,{active:service.active,label:service.label});
+  await appendHistory(req.churchId,{eventType:'service.created',memberId:req.identity?.member?.id||'',source:'admin',details:{id,category:data.category}});
   res.status(201).json({service,template});
-});
-adminRouter.put('/services/:id',async(req,res)=>{
-  const service=await getDoc(tableNames.services,req.churchId,req.params.id); if(!service) return res.status(404).json({error:'Service not found'});
-  const next={...service,...req.body,id:service.id,updatedAt:nowIso()}; await putDoc(tableNames.services,req.churchId,next.id,next,{active:next.active!==false,label:next.label}); res.json(next);
-});
-adminRouter.put('/templates/:id',async(req,res)=>{
-  const old=await getDoc(tableNames.templates,req.churchId,req.params.id); if(!old) return res.status(404).json({error:'Template not found'});
-  const next={...old,...req.body,id:old.id,updatedAt:nowIso()}; await putDoc(tableNames.templates,req.churchId,next.id,next,{serviceId:next.serviceId}); res.json(next);
-});
-
+}catch(e){next(e);}});
+adminRouter.put('/services/:id',async(req,res,next)=>{try{
+  const service=await getDoc(tableNames.services,req.churchId,req.params.id);if(!service)return res.status(404).json({error:'Service not found'});
+  const validated=validateService(req.body,{old:service});
+  if(service.category==='special'&&validated.active){const existingTemplate=await getDoc(tableNames.templates,req.churchId,service.templateId);if(!(existingTemplate?.items||[]).length)return res.status(400).json({error:'Configure positions before activating'});}
+  const next={...service,...validated,updatedAt:nowIso()};
+  // Re-dating or deactivating an activity must not leave outdated future
+  // assignments around to be incorrectly counted by Smart Fair later.
+  // Only program records are archived; all profile eligibility survives.
+  const deactivating=service.active!==false&&next.active===false;
+  if(service.category==='special'&&(deactivating||JSON.stringify(service.recurrence)!==JSON.stringify(next.recurrence))){
+    const settings=await getDoc(tableNames.settings,req.churchId,'church')||{timezone:'America/Chicago'};
+    const today=threeWeekWindow(settings.timezone||'America/Chicago').today;
+    const planned=new Set(deactivating?[]:occurrenceDates(next,today,addDays(today,366)));
+    const prior=await listDocs(tableNames.programs,req.churchId,{filter:`serviceId eq '${service.id}' and dateISO ge '${today}'`,max:500});
+    for(const program of prior.filter(p=>p.status!=='canceled'&&!planned.has(p.dateISO))){
+      program.status='canceled';program.canceledAt=nowIso();program.updatedAt=program.canceledAt;
+      await putDoc(tableNames.programs,req.churchId,program.id,program,{serviceId:program.serviceId,dateISO:program.dateISO,status:program.status});
+      const assignments=await listDocs(tableNames.assignments,req.churchId,{filter:`programId eq '${program.id}'`,max:100});
+      await Promise.all(assignments.filter(a=>a.status==='scheduled'||a.status==='unfilled').map(async a=>{
+        a.status='canceled';a.updatedAt=nowIso();
+        await putDoc(tableNames.assignments,req.churchId,a.id,a,{serviceId:a.serviceId,dateISO:a.dateISO,status:a.status,currentMemberId:a.currentMemberId||'',ministryId:a.ministryId,programId:a.programId});
+      }));
+      await appendHistory(req.churchId,{eventType:'program.canceled_rescheduled',programId:program.id,dateISO:program.dateISO,source:'admin',memberId:req.identity?.member?.id||'',details:{serviceId:service.id}});
+    }
+  }
+  await putDoc(tableNames.services,req.churchId,next.id,next,{active:next.active,label:next.label});
+  await appendHistory(req.churchId,{eventType:'service.updated',memberId:req.identity?.member?.id||'',source:'admin',details:{id:next.id,active:next.active,recurrence:next.recurrence}});
+  res.json(next);
+}catch(e){next(e);}});
+adminRouter.put('/templates/:id',async(req,res,next)=>{try{
+  const old=await getDoc(tableNames.templates,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Template not found'});
+  const ministries=await listDocs(tableNames.ministries,req.churchId);
+  const items=validateTemplateItems(req.body.items,ministries);
+  const service=await getDoc(tableNames.services,req.churchId,old.serviceId);
+  if(service?.category==='special'&&service.active&&items.length===0)return res.status(400).json({error:'An active activity requires positions'});
+  const next={...old,items,updatedAt:nowIso()};await putDoc(tableNames.templates,req.churchId,next.id,next,{serviceId:next.serviceId});
+  await appendHistory(req.churchId,{eventType:'template.updated',memberId:req.identity?.member?.id||'',source:'admin',details:{templateId:next.id}});
+  res.json(next);
+}catch(e){next(e);}});
+adminRouter.post('/schedule/special/:id/generate',async(req,res,next)=>{try{
+  const service=await getDoc(tableNames.services,req.churchId,req.params.id);
+  if(!service||service.category!=='special')return res.status(404).json({error:'Special activity not found'});
+  if(!service.active)return res.status(409).json({error:'Activate and configure the activity first'});
+  const settings=await getDoc(tableNames.settings,req.churchId,'church')||{timezone:'America/Chicago',weekStartsOn:0};
+  const window=threeWeekWindow(settings.timezone||'America/Chicago',Number(settings.weekStartsOn??0));
+  const weekOffset=Number(req.body?.weekOffset??0);
+  if(!Number.isInteger(weekOffset)||weekOffset<0||weekOffset>2)return res.status(400).json({error:'Choose week 0, 1 or 2'});
+  const specialDate=service.recurrence?.frequency==='once'?service.recurrence.date:String(req.body?.targetDate||'');
+  if(specialDate){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(specialDate)||specialDate<window.today||specialDate>addDays(window.today,366)||
+       !occurrenceDates(service,specialDate,specialDate).includes(specialDate))return res.status(400).json({error:'Choose a valid scheduled activity date within the next 366 days'});
+  }
+  const result=await generateScheduleWeek(req.churchId,{weekOffset,specialDate,specialServiceId:service.id,regenerate:req.body?.regenerate!==false,source:'admin-special',requestedBy:req.identity?.member?.id||''});
+  res.json(result);
+}catch(e){next(e);}});
 adminRouter.use('/content',requireModule('publications'));
 adminRouter.get('/content',async(req,res)=>res.json(await listDocs(tableNames.content,req.churchId,{max:500})));
 async function contentAttachmentFromRequest(req,id,existingAttachment=null){

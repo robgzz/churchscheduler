@@ -3,9 +3,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config, tableNames } from '../config.js';
 import { getDoc, putDoc, listDocs, nowIso } from '../storage/repository.js';
+import { initialFuneralEligibility } from './specialServices.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const SEED_VERSION=5;
+const SEED_VERSION=6;
 async function readSeed(name){
   const file=path.resolve(here,`../../seed/${config.seedProfile}/${name}`);
   return JSON.parse(await fs.readFile(file,'utf8'));
@@ -117,6 +118,17 @@ export async function seedIfNeeded(churchId=config.churchId){
       old.preferences={locale:church.defaultLocale||'es',theme:'system'};
       await putDoc(tableNames.members,churchId,old.id,old,{username:old.username||'',active:old.active!==false,adminAccess:old.adminAccess===true,churchAdministrator:old.churchAdministrator===true});
     }
+  }
+
+
+  // One-time migration; skips previously configured funeral profiles. Explicit
+  // admin changes, including inactive services, stay authoritative thereafter.
+  const seededMembers=await listDocs(tableNames.members,churchId,{max:5000});
+  for(const member of seededMembers){
+    const initial=initialFuneralEligibility(member,templates);
+    if(!initial)continue;
+    const newMember={...initial,updatedAt:nowIso()};
+    await putDoc(tableNames.members,churchId,member.id,newMember,{username:member.username||'',active:member.active!==false,adminAccess:member.adminAccess===true,churchAdministrator:member.churchAdministrator===true});
   }
 
   const anthology=await reconcileAuthoritativeSongs(churchId,songDoc.songs||[]);
