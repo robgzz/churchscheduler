@@ -1,0 +1,62 @@
+# 29 — ERES LIMPIO EN LA SANGRE
+
+1
+¿Has hallado en Cristo
+plena salvación
+por la sangre que
+Cristo vertió?
+
+Toda mancha lava de tu corazón.
+Eres limpio en la sangre eficaz?
+
+Coro
+¿Eres limpio en la sangre,
+en la sangre de Cristo Jesús?
+¿Es tu corazón
+más blanco que la nieve? ¿Eres limpio en la sangre eficaz?
+
+2
+¿Vives siempre al lado
+de tu Salvador,
+por la sangre
+que él derramó?
+
+¿Del pecado eres
+siempre vencedor?
+¿Eres limpio en la sangre eficaz?
+
+Coro
+¿Eres limpio en la sangre,
+en la sangre de Cristo Jesús?
+¿Es tu corazón
+más blanco que la nieve? ¿Eres limpio en la sangre eficaz?
+
+3
+¿Tendrás ropa blanca
+al venir Jesús?
+¿Eres limpio en la fuente
+de amor?
+
+¿Estás listo para la mansión de luz?  ¿Eres limpio en la sangre eficaz?
+
+Coro
+¿Eres limpio en la sangre,
+en la sangre de Cristo Jesús?
+¿Es tu corazón
+más blanco que la nieve? ¿Eres limpio en la sangre eficaz?
+
+4
+Cristo ofrece hoy
+pureza y poder.
+¡Oh acude a la cruz
+del Señor!
+
+El la fuente es
+que limpiará tu ser.
+¡Oh acude a su sangre eficaz!
+
+Coro
+¿Eres limpio en la sangre,
+en la sangre de Cristo Jesús?
+¿Es tu corazón
+más blanco que la nieve? ¿Eres limpio en la sangre eficaz?

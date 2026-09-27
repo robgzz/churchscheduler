@@ -80,7 +80,12 @@ memberRouter.delete('/petitions/:id',requireModule('prayer'),requireGroup('membe
   await appendHistory(req.churchId,{eventType:'petition.deleted_by_owner',memberId:req.identity.member.id,source:'member',details:{petitionId:row.id}});
   res.json({ok:true});
 });
-memberRouter.get('/songs',requireGroup('worship'),async(req,res)=>res.json((await listDocs(tableNames.songs,req.churchId,{max:2000})).filter(s=>s.active!==false)));
+memberRouter.get('/songs',async(req,res)=>res.json((await listDocs(tableNames.songs,req.churchId,{max:2000})).filter(s=>s.active!==false).map(({markdown,...meta})=>({...meta,hasLyrics:Boolean(markdown)}))));
+memberRouter.get('/songs/:id',async(req,res)=>{
+  const row=await getDoc(tableNames.songs,req.churchId,req.params.id);
+  if(!row||row.active===false)return res.status(404).json({error:'Song not found'});
+  return res.json(row);
+});
 
 memberRouter.get('/assignments/:assignmentId/song-options',requireGroup('worship'),async(req,res)=>{
   const assignment=await getDoc(tableNames.assignments,req.churchId,req.params.assignmentId);

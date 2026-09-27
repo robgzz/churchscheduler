@@ -281,10 +281,14 @@ adminRouter.delete('/content/:id',async(req,res,next)=>{try{const old=await getD
 adminRouter.get('/petitions',async(req,res)=>res.json(await listDocs(tableNames.petitions,req.churchId,{max:500})));
 adminRouter.use('/visitors',requireModule('visitors'));
 adminRouter.get('/visitors',async(req,res)=>res.json(await listDocs(tableNames.visitorContacts,req.churchId,{max:500})));
-adminRouter.get('/songs',async(req,res)=>res.json(await listDocs(tableNames.songs,req.churchId,{max:2000})));
+adminRouter.get('/songs',async(req,res)=>res.json((await listDocs(tableNames.songs,req.churchId,{max:2000})).map(({markdown,...meta})=>({...meta,hasLyrics:Boolean(markdown)}))));
+adminRouter.get('/songs/:id',async(req,res)=>{
+  const row=await getDoc(tableNames.songs,req.churchId,req.params.id);
+  return row?res.json(row):res.status(404).json({error:'Song not found'});
+});
 adminRouter.post('/songs',async(req,res)=>{
   const id=req.body.id || `song_${crypto.randomUUID().replace(/-/g,'').slice(0,12)}`;
-  const doc={id,number:String(req.body.number||'').trim(),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),active:req.body.active!==false,createdAt:nowIso()};
+  const doc={id,number:String(req.body.number||'').trim(),title:String(req.body.titleEs||req.body.title||req.body.titleEn||'').trim(),titleEs:String(req.body.titleEs||req.body.title||'').trim(),titleEn:String(req.body.titleEn||req.body.title||'').trim(),active:req.body.active!==false,markdown:String(req.body.markdown||''),createdAt:nowIso()};
   if(!doc.title) return res.status(400).json({error:'Song title is required.'});
   await putDoc(tableNames.songs,req.churchId,id,doc,{title:doc.title,number:doc.number,active:doc.active});
   res.status(201).json(doc);
@@ -292,7 +296,7 @@ adminRouter.post('/songs',async(req,res)=>{
 adminRouter.put('/songs/:id',async(req,res)=>{
   const old=await getDoc(tableNames.songs,req.churchId,req.params.id);
   if(!old) return res.status(404).json({error:'Song not found'});
-  const doc={...old,number:String(req.body.number??old.number??'').trim(),title:String(req.body.titleEs??req.body.title??old.titleEs??old.title??'').trim(),titleEs:String(req.body.titleEs??req.body.title??old.titleEs??old.title??'').trim(),titleEn:String(req.body.titleEn??old.titleEn??old.title??'').trim(),active:req.body.active!==false,updatedAt:nowIso()};
+  const doc={...old,number:String(req.body.number??old.number??'').trim(),title:String(req.body.titleEs??req.body.title??old.titleEs??old.title??'').trim(),titleEs:String(req.body.titleEs??req.body.title??old.titleEs??old.title??'').trim(),titleEn:String(req.body.titleEn??old.titleEn??old.title??'').trim(),active:req.body.active!==false,markdown:req.body.markdown===undefined?String(old.markdown||''):String(req.body.markdown||''),updatedAt:nowIso()};
   if(!doc.title) return res.status(400).json({error:'Song title is required.'});
   await putDoc(tableNames.songs,req.churchId,doc.id,doc,{title:doc.title,number:doc.number,active:doc.active});
   res.json(doc);

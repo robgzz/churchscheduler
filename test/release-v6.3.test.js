@@ -8,7 +8,7 @@ const auth=fs.readFileSync(new URL('../src/routes/auth.js',import.meta.url),'utf
 const deletion=fs.readFileSync(new URL('../src/services/memberDeletion.js',import.meta.url),'utf8');
 const version=fs.readFileSync(new URL('../src/version.js',import.meta.url),'utf8');
 
-test('V6.3 version is declared',()=>{ assert.match(version,/APP_VERSION='6\.3\.0'/); });
+test('V6.3 version is declared',()=>{ assert.match(version,/APP_VERSION='6\.[34]\.0'/); });
 
 test('member programs render collapsed by default with details/summary',()=>{
   assert.match(app,/details class=\"card service-card modern-program program-collapsible/);

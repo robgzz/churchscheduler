@@ -5,7 +5,7 @@ import { config, tableNames } from '../config.js';
 import { getDoc, putDoc, listDocs, nowIso } from '../storage/repository.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const SEED_VERSION=4;
+const SEED_VERSION=5;
 async function readSeed(name){
   const file=path.resolve(here,`../../seed/${config.seedProfile}/${name}`);
   return JSON.parse(await fs.readFile(file,'utf8'));
@@ -24,6 +24,45 @@ function mergeTemplate(existing,seed){
       return {...si,...item,labelEn:item.labelEn||si.labelEn||item.label||si.label||'',labelEs:item.labelEs||si.labelEs||item.label||si.label||''};
     })
   };
+}
+
+// V6.4 anthology reconciliation: the supplied slide filenames are authoritative.
+// Match by normalized title, NEVER by number alone: different old titles at the same
+// number must not silently inherit historical program assignments.
+function songTitleKey(value=''){
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+export async function reconcileAuthoritativeSongs(churchId,canonicalSongs){
+  const existing=await listDocs(tableNames.songs,churchId,{max:10000});
+  const claimed=new Set();const canonicalIds=new Set();
+  let matched=0,created=0,deactivated=0;
+  for(const canonical of canonicalSongs){
+    // Prefer identical title AND number, otherwise identical title with an older number.
+    // Stable canonical IDs also make interrupted migrations safely resumable.
+    const norm=songTitleKey(canonical.titleEs||canonical.title);
+    const candidates=existing.filter(old=>!claimed.has(old.id)&&songTitleKey(old.titleEs||old.title)===norm);
+    const old=existing.find(row=>row.id===canonical.id&&!claimed.has(row.id))||
+      candidates.find(row=>String(row.number)===String(canonical.number))||candidates[0];
+    if(old)claimed.add(old.id);
+    const id=old?.id||canonical.id;canonicalIds.add(id);
+    const row={...(old||{}),...canonical,id,active:true,
+      // The submitted anthology always replaces historical numbering and lyrics.
+      number:canonical.number,title:canonical.title,titleEs:canonical.titleEs,
+      titleEn:old?.titleEn||canonical.titleEn||'',markdown:canonical.markdown,
+      source:'anthology_user_supplied',authoritative:true,updatedAt:nowIso(),
+      createdAt:old?.createdAt||nowIso()};
+    await putDoc(tableNames.songs,churchId,id,row,{title:row.titleEs,number:row.number,active:true});
+    if(old)matched++;else created++;
+  }
+  // Do not destroy old rows referenced by old service/program history; hide only.
+  for(const old of existing){
+    if(canonicalIds.has(old.id)||old.active===false)continue;
+    await putDoc(tableNames.songs,churchId,old.id,{...old,active:false,
+      replacedBy:'v6.4-authoritative-anthology',updatedAt:nowIso()},
+      {title:old.titleEs||old.title||'',number:String(old.number||''),active:false});
+    deactivated++;
+  }
+  return {matched,created,deactivated};
 }
 
 export async function seedIfNeeded(churchId=config.churchId){
@@ -80,14 +119,10 @@ export async function seedIfNeeded(churchId=config.churchId){
     }
   }
 
-  for(const s of songDoc.songs||[]){
-    const old=await getDoc(tableNames.songs,churchId,s.id);
-    const merged=old?{...s,...old,titleEs:old.titleEs||old.title||s.titleEs||s.title,titleEn:old.titleEn||s.titleEn||''}:{...s};
-    await putDoc(tableNames.songs,churchId,s.id,merged,{title:merged.titleEs||merged.title||merged.titleEn||'',number:String(merged.number||''),active:merged.active!==false});
-  }
+  const anthology=await reconcileAuthoritativeSongs(churchId,songDoc.songs||[]);
 
-  await putDoc(tableNames.settings,churchId,'seed',{id:'seed',version:SEED_VERSION,profile:config.seedProfile,completedAt:nowIso(),memberCount,songCount:(songDoc.songs||[]).length});
-  return {seeded:true,version:SEED_VERSION,memberCount,songCount:(songDoc.songs||[]).length};
+  await putDoc(tableNames.settings,churchId,'seed',{id:'seed',version:SEED_VERSION,profile:config.seedProfile,completedAt:nowIso(),memberCount,songCount:(songDoc.songs||[]).length,anthology});
+  return {seeded:true,version:SEED_VERSION,memberCount,songCount:(songDoc.songs||[]).length,anthology};
 }
 
 export async function bootstrapSummary(churchId=config.churchId){

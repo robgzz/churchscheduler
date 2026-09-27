@@ -1,0 +1,230 @@
+# Antología de cantos — índice autorizado
+
+Numeración basada únicamente en los archivos facilitados; no se inventan cantos faltantes.
+
+- **0** — Himno de Bienvenida
+- **1** — Iglesia de Cristo
+- **2** — Canta, oh buen cristiano
+- **3** — Invocación a la Trinidad
+- **4** — No te de temor hablar por Cristo
+- **5** — Oh, Bondad Tan Infinita!
+- **6** — BELLAS PALABRAS DE VIDA
+- **7** — MIRAD AL SALVADOR JESUS
+- **8** — Gloria a la Trinidad
+- **9** — LUGAR PARA CRISTO
+- **10** — CRISTO EL REY DE GLORIA
+- **11** — Hay Un Lugar Do Quiero Estar
+- **12** — Alabad al gran rey
+- **13** — Mi vida di por ti
+- **14** — Oh, Qué Amigo!
+- **15** — Loores Dad A Cristo El Rey
+- **16** — Meditad
+- **17** — POR LA MAÑANA YO DIRIJO MI ALABANZA
+- **18** — Pronto La Noche Viene
+- **19** — LA SANTA CENA
+- **20** — Salvador a Ti Me Rindo
+- **21** — ANDANDO EN LA LUZ
+- **22** — HAY UN MUNDO FELIZ
+- **23** — PECADOR VEN AL DULCE JESUS
+- **24** — QUE MI VIDA ENTERA ESTE
+- **25** — Santa Biblia
+- **26** — Cristo Hazme Ver Tu Cruz
+- **27** — ESTAD POR CRISTO FIRMES
+- **28** — TAL COMO SOY
+- **29** — ERES LIMPIO EN LA SANGRE
+- **30** — Dondequiera Con Jesús
+- **31** — Jesús es mi Rey Soberano
+- **32** — En La Viña del Señor
+- **33** — Te Loamos, ¡Oh, Dios!
+- **34** — Rostro divino
+- **35** — Tuyo Soy Jesús
+- **36** — El Mundo perdido
+- **37** — Me Guía El
+- **38** — Habládme Más De Cristo
+- **39** — GLORIA A TI JESÚS DIVINO
+- **40** — AL CRISTO VIVO SIRVO
+- **41** — YO SE QUE JESUCRISTO VIVE
+- **42** — ALABANZAS DAD A CRISTO
+- **43** — Digno Es El Cordero
+- **44** — Junto a la Cruz
+- **45** — CUANDO ALLA SE PASE LISTA
+- **46** — Santo! ¡Santo! ¡Santo
+- **47** — DIA FELIZ
+- **48** — A Jesucristo Ven Sin Tardar
+- **49** — El Nombre De Jesús
+- **50** — Cantaré La Maravilla
+- **51** — Cara a Cara
+- **52** — DULCE CONSUELO (EN JESUCRISTO MARTIR DE PAZ)
+- **53** — A Ti Y A Mi
+- **54** — Oh, Excelsa Gracia Del Amor
+- **55** — Día de Victoria y Gozo Celestial
+- **56** — OH, VEN SIN TARDAR!
+- **57** — SOY YO SOLDADO DE JESUS
+- **58** — Dulce Comunión
+- **59** — TRABAJAD, TRABAJAD
+- **60** — GRANDE GOZO HAY EN MI ALMA HOY
+- **61** — CUANDO ANDEMOS CON DIOS
+- **62** — DILO A CRISTO
+- **63** — Más De Jesús
+- **64** — PIEDAD
+- **65** — VEN A CRISTO
+- **66** — Las Pisadas Del Maestro
+- **67** — Puedo Oir Tu Voz Llamando(2)
+- **68** — De Mi Tierno Salvador
+- **69** — Grandes cosas Cristo Ha Hecho Para Mí
+- **70** — Voy Al Cielo, Soy Peregrino
+- **71** — La Siembra
+- **72** — CRISTO ES MI DULCE SALVADOR
+- **73** — Nitido Rayo Por Cristo
+- **74** — ESTOY BIEN CON MI DIOS
+- **75** — Loor A Ti Señor
+- **76** — El gran Dia Viene
+- **77** — Las Promesas de Jesús
+- **78** — En busca de Obreros
+- **79** — VALOR Y FE
+- **80** — Dios Es Amor
+- **81** — Oh, Qué Amigo Nos Es Cristo!
+- **82** — Dios Os Guarde
+- **83** — EN LA CRUZ
+- **84** — A SOLAS CON JESUS
+- **85** — Sólo La Sangre (Qué me puede dar Perdón)
+- **86** — Jesucristo Desde El Cielo
+- **87** — El Mundo No Es Mi Hogar
+- **88** — SIEMPRE ORAD
+- **89** — Ven Pecador
+- **90** — NO LO HAY
+- **91** — TIERNAS CANCIONES
+- **92** — CON VOZ BENIGNA
+- **93** — LA MERCED DE NUESTRO PADRE
+- **94** — Oh, Cuán Dulce
+- **95** — OIGO LA VOZ DEL BUEN PASTOR
+- **96** — Maestro Ruge La Tempestad!
+- **97** — Dejo el mundo y sigo a Cristo
+- **98** — YO ESCUCHO, BUEN JESUS
+- **99** — el que habita al abrigo de Dios
+- **100** — La Tumba Le Encerró
+- **101** — Dime La Historia De Cristo
+- **102** — LA TIERNA VOZ DEL SALVADOR
+- **103** — Cuando Combatido Por La Adversidad
+- **104** — CRISTO EL SALVADOR
+- **105** — Vives Tú Sólo Por Cristo Jesús
+- **106** — LOS QUE AMAN AL SEÑOR
+- **107** — Cantad, ¡Oh Peregrinos!
+- **108** — Oh, cuánto amo a Cristo!
+- **109** — DA LA LUZ
+- **110** — El Hijo Pródigo
+- **111** — Señor, mi Dios
+- **112** — Hubo Quien Por Mis Culpas
+- **113** — El cuidara de Mi
+- **114** — HAY PODER EN JESUS
+- **115** — Un Dia
+- **116** — COMPRADO CON SANGRE POR CRISTO
+- **117** — En La Mansión Do Cristo Está
+- **118** — A la batalla
+- **119** — Años Mi Alma En Vanidad Vivió
+- **120** — ACOMBATIR RESUENA LA GUERRERA VOZ
+- **121** — Cual Pendon Hermoso
+- **122** — Mi Dios y Yo
+- **123** — SEÑOR DEL CIELO Y DE LA TIERRA
+- **124** — NUESTRO DIOS VIVE HOY
+- **125** — oh yo quiero andar con cristo
+- **126** — la mañana gloriosa
+- **127** — Cerca De Ti Señor
+- **128** — La Cruz de Jesús
+- **129** — Yo Sé Que Existe Un Redentor
+- **130** — Proclamad El Mensaje
+- **131** — el señor Jesus esta llamando
+- **132** — CANSADO Y TRISTE VINE AL SALVADOR
+- **134** — Cantar de El Deseo Yo
+- **135** — Hay Una Senda
+- **136** — CANTEN DEL AMOR DE CRISTO
+- **137** — HERMANO, DINOS HOY
+- **138** — Nuestra Vida Acabará
+- **139** — Soy Peregrino Aquí
+- **140** — CON QUE PAGAREMOS
+- **141** — ABRE MIS OJOS (solo)
+- **142** — ALABAD A JEHOVA
+- **143** — ALABARE
+- **144** — SOLO DIS HACE AL HOMBRE FELIZ
+- **145** — UNA MIRADA DE FE
+- **146** — AMEN,AMEN,AMEN,
+- **147** — BENDITO SEA EL SEÑOR
+- **148** — BUENO ES ALABAR AL SEÑOR
+- **149** — CON MIS LABIOS
+- **150** — CRISTO ERES BELLO
+- **151** — CRISTO GUARDA SIEMPRE
+- **152** — CUAN BELLO ES EL SEÑOR
+- **153** — DAMOS GRACIAS
+- **154** — DIOS TU PUEBLO CANTA
+- **155** — DIVINO COMPAÑERO
+- **156** — EL AMOR DE DIOS
+- **157** — TU FIDELIDAD
+- **158** — EL ESPIRITU DE DIOS
+- **159** — EL ME LEVANTARA
+- **160** — EN EL NOMBRE DE JESUS
+- **161** — RENUEVAME
+- **162** — EN MOMENTO ASI
+- **163** — ENTRA EN LA PRESENCIA DEL SEÑOR
+- **164** — Enviado soy de Dios
+- **165** — Espiritu de Dios
+- **166** — ESTAMOS JUNTOS OTRA VE copy
+- **167** — ESTE ES EL DIA
+- **168** — GLORIFICAD A JEHOVA
+- **169** — GOZATE DELANTE DEL SEÑOR
+- **170** — GRACIAS
+- **171** — GRANDES Y MARAVILLOSAS SON TUS OBRAS
+- **172** — HARE UN ALTAR PARA TI
+- **173** — HAY UNA FIESTA
+- **174** — HOY HE VENIDO CON DULCES PALABRAS
+- **175** — LA CIUDAD DE DIOS
+- **176** — MI ALMA TE ANHELA ALABAR
+- **177** — NO PUEDE ESTAR TRISTE
+- **178** — PADRE BENDITO
+- **179** — PORQUE EL VIVE
+- **180** — PORQUE GRANDE ES JEHOVA
+- **181** — PUEDO CONFIAR EN EL SEÑOR
+- **182** — QUE NO SE APAGUE EL FUEGO
+- **183** — QUE SERIA DE MI
+- **184** — QUIEN COMO JEHOVA
+- **185** — QUIERO DARTE LO MEJOR DE MI
+- **186** — SACRIFICIO DE ALABANZA
+- **187** — SANTO ES TU NOMBRE
+- **188** — SENDAS
+- **189** — SIN TI
+- **190** — SOLO EN TU PRESENCIA
+- **191** — SOMOS UNO EN CRISTO
+- **192** — SU GRACIA ME ALCANZO
+- **193** — SUMERGEME
+- **194** — TE ADORARE SEÑOR
+- **195** — TE ALABARAN OH JEHOVA TODOS LOS REYES
+- **196** — TU ERES DIGNO
+- **197** — SEÑOR DEL CIELO Y DE LA TIERRA
+- **198** — VENIMOS ANTE TI SEÑOR
+- **199** — YO SE QUE JESUCRISTO VIVE
+- **200** — Algo esta callendo aqui
+- **201** — YO TENGO GOZO EN MI ALMA
+- **203a** — Dias de Elias
+- **203b** — MAS ALLA DEL SOL
+- **204** — AL CRISTO VIVO SIRVO
+- **205** — SOMOS EL PUEBLO DE DIOS
+- **206** — Hay una unción aquí
+- **207** — DULCE REFUGIO
+- **208** — Sublime gracia
+- **209** — VEN ESPIRITU VEN
+- **210** — TE EXALTARE MI DIOS MI REY
+- **211** — ANTE TI SENOR
+- **212** — VIVO YO DICE EL SENOR
+- **214** — SI EL HOMBRE CALLARE
+- **215** — A JEHOVA INVOCARE
+- **216** — Cerca de ti
+- **217** — MI ROCA
+- **218** — SOLO QUIERO ESTAR DONDE TU ESTAS
+- **219** — TE VENGO A DECIR
+- **220** — LAS MUJERES CRISTIANAS TRABAJAN
+- **221** — JESUS ME HACES TAN FELIZ
+- **222** — EL QUE NO ESCATIMO
+- **223a** — DIAS DE ELIAS
+- **223b** — ESPERAR EN TI
+- **224** — MI ESPERANZA ESTA EN JESUS
+- **225** — DIOS ESTA AQUI
+- **226** — Dios esta aqui 2

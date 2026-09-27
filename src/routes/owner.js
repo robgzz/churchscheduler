@@ -81,7 +81,7 @@ function sendTableExport(res,{rows,format,name,sheetName}){
   return res.status(400).json({error:'format must be csv or excel'});
 }
 ownerRouter.get('/songs/export',async(req,res)=>{
-  const songs=(await listDocs(tableNames.songs,req.churchId,{max:10000})).sort((a,b)=>Number(a.number||0)-Number(b.number||0));
+  const songs=(await listDocs(tableNames.songs,req.churchId,{max:10000})).sort((a,b)=>parseInt(a.number,10)-parseInt(b.number,10)||String(a.number).localeCompare(String(b.number),undefined,{numeric:true}));
   const rows=songs.map(s=>({Number:s.number||'','Title Spanish':s.titleEs||s.title||'','Title English':s.titleEn||'',Active:s.active===false?'No':'Yes'}));
   return sendTableExport(res,{rows,format:String(req.query.format||'csv').toLowerCase(),name:'songs',sheetName:'Songs'});
 });

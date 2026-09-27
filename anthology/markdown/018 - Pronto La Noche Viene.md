@@ -1,0 +1,45 @@
+# 18 — Pronto La Noche Viene
+
+1
+Pronto la noche viene,
+tiempo es de trabajar.
+Los que lucháis por Cristo,
+no hay que descansar.
+
+Cuando la vida es sueño,
+gozo, vigor, salud,
+Y es la mañana hermosa
+de la juventud.
+
+2
+Pronto la noche viene,
+tiempo es de trabajar,
+para salvar al mundo,
+hay que batallar,
+
+Cuando la vida alcanza,
+toda su esplendidez.
+Cuando es el medio día
+de la madurez.
+
+3
+Pronto la noche viene,
+tiempo es de trabajar;
+si el pecador perece,
+idlo a rescatar,
+
+Aun a  la edad provecta,
+débil y sin salud ,
+aun a la misma tarde
+de la senectud.
+
+4
+Pronto la noche viene,
+¡listos a trabajar!
+Listos que muchas almas,
+hay que rescatar.
+
+¿Quién de la vida el día
+puede desperdiciar?
+Viene la noche cuando
+nadie puede obrar.

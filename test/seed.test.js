@@ -33,14 +33,13 @@ test('migrated members use V2 additive groups',()=>{
 });
 
 
-test('Westbury song library is migrated and normalized',()=>{
-  assert.equal(songSeed.songs.length,216);
+test('Westbury V6.4 anthology replaces legacy numbering with authoritative submitted files',()=>{
+  assert.equal(songSeed.songs.length,226);
   assert.equal(songSeed.songs[0].number,'0');
   assert.equal(songSeed.songs[0].title,'Himno de Bienvenida');
-  const splitTitle=songSeed.songs.find(s=>s.id==='song_vmlt0kv3');
-  assert.equal(splitTitle.number,'5');
-  assert.equal(splitTitle.title,'Oh, Bondad Tan Infinita!');
-  assert.ok(splitTitle.legacySource);
+  assert.equal(songSeed.songs.find(s=>s.number==='68').title,'De Mi Tierno Salvador');
+  assert.ok(songSeed.songs.every(s=>s.markdown.startsWith(`# ${s.number} — ${s.title}\n`)));
+  assert.ok(songSeed.songs.every(s=>s.active));
 });
 
 

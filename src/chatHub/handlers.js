@@ -103,7 +103,7 @@ async function resolveOwnSongAssignment(req,message,state){
 }
 function songLabel(s,loc){return `${s.number?`${s.number}. `:''}${loc==='en'?(s.titleEn||s.titleEs||s.title):(s.titleEs||s.titleEn||s.title)}`;}
 async function parseRequestedSongs(churchId,message){
-  const songs=(await listDocs(tableNames.songs,churchId,{max:3000})).filter(s=>s.active!==false),f=fold(message),nums=[...new Set((f.match(/\b\d{1,4}\b/g)||[]))];const picked=[];
+  const songs=(await listDocs(tableNames.songs,churchId,{max:3000})).filter(s=>s.active!==false),f=fold(message),nums=[...new Set((f.match(/\b\d{1,4}[a-z]?\b/g)||[]))];const picked=[];
   for(const n of nums){const hit=songs.find(s=>String(s.number||'')===n);if(hit&&!picked.some(x=>x.id===hit.id))picked.push(hit);}
   if(!picked.length){const terms=queryTerms(message).filter(t=>!['canto','cantos','song','songs','elige','escoge','selecciona','choose','select','pon','poner','use','usar'].includes(t));for(const song of songs){const hay=fold(`${song.titleEs||''} ${song.titleEn||''} ${song.title||''}`);if(terms.length&&terms.every(t=>hay.includes(t)||hay.split(' ').some(w=>tokenSimilarity(t,w)>=.84))){picked.push(song);if(picked.length>=25)break;}}}
   return picked;
