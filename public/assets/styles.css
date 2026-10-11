@@ -214,3 +214,34 @@ html[data-theme="dark"] .home-welcome{background:linear-gradient(125deg,#102033,
 .song-section-action.pending{border-style:dashed}
 .song-section-action .selected-songs{margin-top:8px}
 @media(max-width:580px){.song-section-action{align-items:stretch;flex-direction:column}.song-section-action button{width:100%}}
+
+/* V6.6.2: simplified worship assignments and administrator song controls. */
+.simple-assignment-stack{gap:10px}
+.my-assignment-card.simple-assignment{padding:14px 15px;border-radius:20px;background:var(--surface);box-shadow:none;overflow:visible}
+.my-assignment-card.simple-assignment::after{display:none}
+.simple-assignment-main{display:flex;align-items:center;gap:12px}
+.simple-assignment-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.simple-assignment-title{font-size:18px;line-height:1.15;color:var(--text)}
+.simple-assignment-service{font-size:12px;color:var(--muted);font-weight:700;line-height:1.35}
+.simple-status{width:34px;height:34px;min-width:34px;border-radius:11px;display:grid;place-items:center;font-weight:950}
+.simple-status.done{background:var(--success-soft);color:var(--success)}
+.simple-status.needs{background:var(--warning-soft);color:var(--warning)}
+.simple-song-alert{margin-top:10px;padding:9px 11px;border-radius:12px;background:var(--warning-soft);color:var(--warning);font-size:13px}
+.assignment-song-steps{display:grid;gap:8px;margin-top:10px}
+.simple-song-step{display:flex;align-items:center;gap:10px;padding:10px 11px;border:1px solid var(--border);border-radius:14px;background:color-mix(in srgb,var(--surface) 94%,var(--accent))}
+.simple-song-step.pending{border-color:color-mix(in srgb,var(--warning) 38%,var(--border))}
+.simple-song-step.complete{border-color:color-mix(in srgb,var(--success) 28%,var(--border))}
+.simple-song-step strong,.simple-song-step small{display:block}.simple-song-step small{margin-top:2px;color:var(--muted);font-size:11px}
+.simple-song-step .btn{min-width:132px;white-space:nowrap}
+.simple-assignment-footer{display:flex;justify-content:flex-end;margin-top:7px}
+.simple-assignment-footer .replacement-btn{font-size:12px;padding:7px 9px;min-height:0;color:var(--muted)}
+.admin-program-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.compact-admin-song{padding:7px 10px;min-height:34px;font-size:12px;white-space:nowrap}
+@media(max-width:520px){
+  .my-assignment-card.simple-assignment{padding:12px}
+  .simple-assignment-title{font-size:17px}
+  .simple-song-step{align-items:stretch;flex-direction:column}
+  .simple-song-step .btn{width:100%;min-width:0;min-height:44px}
+  .simple-assignment-footer{justify-content:stretch}.simple-assignment-footer .replacement-btn{width:100%;text-align:left}
+  .admin-program-actions{width:100%;justify-content:flex-start;margin-top:6px}.compact-admin-song{flex:1;min-height:40px}
+}

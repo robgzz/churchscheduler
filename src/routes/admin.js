@@ -19,6 +19,8 @@ import { enqueue } from '../communications/notifications.js';
 import { requireModule } from '../modules/registry.js';
 import { deleteMemberProfile } from '../services/memberDeletion.js';
 import { validateService, validateTemplateItems, newServiceId } from '../services/specialServices.js';
+import { songSelectionContext, validateNoDuplicateSongsInProgram } from '../services/songSelection.js';
+import { songSectionsFor, songPartsFor } from '../services/songSections.js';
 
 function fileSignatureOk(contentType,buf){
   if(contentType==='application/pdf') return buf.length>=5 && buf.subarray(0,5).toString('ascii')==='%PDF-';
@@ -353,6 +355,43 @@ adminRouter.put('/content/:id',async(req,res,next)=>{try{
   if(req.body.notifyMembers===true&&doc.kind==='announcement'&&doc.published!==false)await enqueueAnnouncement(req.churchId,doc);res.json(doc);
 }catch(e){next(e);}});
 adminRouter.delete('/content/:id',async(req,res,next)=>{try{const old=await getDoc(tableNames.content,req.churchId,req.params.id);if(!old)return res.status(404).json({error:'Content not found'});if(old.attachment?.blobName)await deleteBlob(old.attachment.container||config.attachmentsContainer,old.attachment.blobName).catch(()=>{});await deleteDoc(tableNames.content,req.churchId,req.params.id);await appendHistory(req.churchId,{eventType:'content.deleted',memberId:req.identity?.member?.id||'',source:'admin',details:{contentId:old.id,kind:old.kind,title:old.title}});res.json({ok:true});}catch(e){next(e);}});
+
+adminRouter.get('/schedule/assignments/:assignmentId/song-options',async(req,res,next)=>{try{
+  const assignment=await getDoc(tableNames.assignments,req.churchId,req.params.assignmentId);
+  if(!assignment)return res.status(404).json({error:'Assignment not found',code:'ASSIGNMENT_NOT_FOUND'});
+  if(assignment.ministryId!=='ministry_songs')return res.status(409).json({error:'Songs can only be selected for a Cantos assignment',code:'SONG_ASSIGNMENT_ONLY'});
+  res.json(await songSelectionContext(req.churchId,assignment,assignment.currentMemberId||''));
+}catch(e){next(e);}});
+
+adminRouter.put('/schedule/assignments/:assignmentId/songs',async(req,res,next)=>{try{
+  const assignment=await getDoc(tableNames.assignments,req.churchId,req.params.assignmentId);
+  if(!assignment)return res.status(404).json({error:'Assignment not found',code:'ASSIGNMENT_NOT_FOUND'});
+  if(assignment.ministryId!=='ministry_songs')return res.status(409).json({error:'Songs can only be selected for a Cantos assignment',code:'SONG_ASSIGNMENT_ONLY'});
+  if(assignment.status!=='scheduled')return res.status(409).json({error:'Only scheduled assignments can be updated',code:'ASSIGNMENT_NOT_SCHEDULED'});
+  const program=await getDoc(tableNames.programs,req.churchId,assignment.programId);
+  const template=program?await getDoc(tableNames.templates,req.churchId,program.templateId):null;
+  const sections=songSectionsFor(template,assignment.assignmentKey);
+  const sectionKey=String(req.body?.section||'main');
+  if(!sections.some(section=>section.key===sectionKey))return res.status(400).json({error:'Invalid song section for this assignment',code:'INVALID_SONG_SECTION'});
+  if(!Array.isArray(req.body?.songIds)||req.body.songIds.length>25||req.body.songIds.some(id=>typeof id!=='string'))return res.status(400).json({error:'Invalid song list',code:'INVALID_SONGS'});
+  const requested=[...new Set(req.body.songIds.filter(Boolean))];
+  if(sectionKey!=='main'&&requested.length>1)return res.status(400).json({error:'Select only one song for this section.',code:'INVALID_SONGS'});
+  const songs=await listDocs(tableNames.songs,req.churchId,{max:2000});
+  const songMap=new Map(songs.filter(s=>s.active!==false).map(s=>[s.id,s]));
+  if(requested.some(id=>!songMap.has(id)))return res.status(400).json({error:'One or more selected songs are invalid or inactive',code:'INVALID_SONGS'});
+  try{await validateNoDuplicateSongsInProgram(req.churchId,assignment,requested,sectionKey);}catch(e){return res.status(e.statusCode||409).json({error:e.message,code:e.code||'DUPLICATE_SERVICE_SONGS',conflicts:e.conflicts||[]});}
+  assignment.songParts={...songPartsFor(assignment),[sectionKey]:requested};
+  assignment.songIds=assignment.songParts.main;
+  assignment.songsUpdatedAt=nowIso();
+  assignment.songsUpdatedBy=req.identity?.member?.id||'admin';
+  assignment.songsUpdatedByRole='admin';
+  assignment.updatedAt=nowIso();
+  await putDoc(tableNames.assignments,req.churchId,assignment.id,assignment,{serviceId:assignment.serviceId,dateISO:assignment.dateISO,status:assignment.status,currentMemberId:assignment.currentMemberId||'',ministryId:assignment.ministryId,programId:assignment.programId});
+  await appendHistory(req.churchId,{eventType:'songs.admin_updated',programId:assignment.programId,assignmentId:assignment.id,assignmentKey:assignment.assignmentKey,ministryId:assignment.ministryId,memberId:req.identity?.member?.id||'',dateISO:assignment.dateISO,source:'admin',details:{songIds:requested,section:sectionKey,onBehalfOf:assignment.currentMemberId||''}});
+  await securityEvent(req,'admin_song_selection_updated',{assignmentId:assignment.id,programId:assignment.programId,section:sectionKey,songCount:requested.length,onBehalfOf:assignment.currentMemberId||''});
+  await syncProgramStatus(req.churchId,{programId:assignment.programId});
+  res.json({ok:true,assignmentId:assignment.id,section:sectionKey,songIds:requested,songs:requested.map(id=>songMap.get(id)).filter(Boolean)});
+}catch(e){next(e);}});
 
 adminRouter.get('/petitions',async(req,res)=>res.json(await listDocs(tableNames.petitions,req.churchId,{max:500})));
 adminRouter.use('/visitors',requireModule('visitors'));
