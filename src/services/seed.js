@@ -4,9 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { config, tableNames } from '../config.js';
 import { getDoc, putDoc, listDocs, nowIso } from '../storage/repository.js';
 import { initialFuneralEligibility } from './specialServices.js';
+import { completePastAssignments, rebalanceRegularScheduleFrom } from '../scheduler/engine.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const SEED_VERSION=6;
+const SEED_VERSION=7;
+const FAIRNESS_V3_MIGRATION_ID='migration_smart_fair_v3_october_2026';
 async function readSeed(name){
   const file=path.resolve(here,`../../seed/${config.seedProfile}/${name}`);
   return JSON.parse(await fs.readFile(file,'utf8'));
@@ -87,6 +89,13 @@ export async function seedIfNeeded(churchId=config.churchId){
       churchNameEn:existingChurch.churchNameEn||existingChurch.churchName||church.churchNameEn||church.churchName,
       churchNameEs:existingChurch.churchNameEs||existingChurch.churchName||church.churchNameEs||church.churchName,
       logoUrl:existingChurch.logoUrl||church.logoUrl||'',
+      algorithm:{
+        ...(church.algorithm||{}),
+        ...(existingChurch.algorithm||{}),
+        mode:'SMART_FAIR_V3',
+        fairnessBaselineDate:existingChurch.algorithm?.fairnessBaselineDate||church.algorithm?.fairnessBaselineDate||'2026-10-01',
+        weights:existingChurch.algorithm?.mode==='SMART_FAIR_V3'?{...(church.algorithm?.weights||{}),...(existingChurch.algorithm?.weights||{})}:{...(church.algorithm?.weights||{})}
+      },
       updatedAt:nowIso()
     };
     await putDoc(tableNames.settings,churchId,'church',merged);
@@ -133,8 +142,24 @@ export async function seedIfNeeded(churchId=config.churchId){
 
   const anthology=await reconcileAuthoritativeSongs(churchId,songDoc.songs||[]);
 
-  await putDoc(tableNames.settings,churchId,'seed',{id:'seed',version:SEED_VERSION,profile:config.seedProfile,completedAt:nowIso(),memberCount,songCount:(songDoc.songs||[]).length,anthology});
-  return {seeded:true,version:SEED_VERSION,memberCount,songCount:(songDoc.songs||[]).length,anthology};
+  // Smart Fair V3 cutover requested for the live October rotation. The first
+  // two programs are intentionally left untouched: Wednesday Oct 14 and Sunday
+  // Class Oct 18. Rebalancing begins with Sunday Worship Oct 18 and continues
+  // chronologically across the remaining visible three-week horizon.
+  let fairnessMigration=await getDoc(tableNames.settings,churchId,FAIRNESS_V3_MIGRATION_ID);
+  if(!fairnessMigration?.completedAt){
+    const completedBeforeRebalance=await completePastAssignments(churchId);
+    const preservedPrograms=['svc_wednesday_class__2026-10-14','svc_sunday_class__2026-10-18'];
+    const rebalance=await rebalanceRegularScheduleFrom(churchId,{
+      startDate:'2026-10-18',startServiceId:'svc_sunday_worship',preserveProgramIds:preservedPrograms,source:'v6.7.0-smart-fair-v3-migration'
+    });
+    fairnessMigration={id:FAIRNESS_V3_MIGRATION_ID,completedAt:nowIso(),baselineDate:'2026-10-01',completedBeforeRebalance,preservedPrograms,
+      startProgramId:'svc_sunday_worship__2026-10-18',programCount:rebalance.programCount,reassigned:rebalance.reassigned,created:rebalance.created,protectedCount:rebalance.protectedCount};
+    await putDoc(tableNames.settings,churchId,FAIRNESS_V3_MIGRATION_ID,fairnessMigration);
+  }
+
+  await putDoc(tableNames.settings,churchId,'seed',{id:'seed',version:SEED_VERSION,profile:config.seedProfile,completedAt:nowIso(),memberCount,songCount:(songDoc.songs||[]).length,anthology,fairnessMigration});
+  return {seeded:true,version:SEED_VERSION,memberCount,songCount:(songDoc.songs||[]).length,anthology,fairnessMigration};
 }
 
 export async function bootstrapSummary(churchId=config.churchId){

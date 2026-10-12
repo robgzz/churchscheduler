@@ -1,6 +1,11 @@
-# Westbury Church Hub V6.3.0
+# Westbury Church Hub V6.7.0
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
+
+
+## V6.7 — Smart Fair V3
+
+V6.7 moves scheduling fairness from ministry-first counters to whole-person workload and rest. It avoids consecutive same-service reuse when alternatives exist, considers all service assignments across the prior 7/28 days and protected future commitments, preserves maximum program coverage, and performs the requested October 2026 cutover beginning with Sunday Worship on Oct. 18 while leaving Wednesday Oct. 14 and Sunday Class Oct. 18 unchanged. See `RELEASE-NOTES-V6.7.0.md`.
 
 ## V6.1 — Reliability, Editable Administration & ACS Email
 

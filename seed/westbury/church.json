@@ -6,17 +6,18 @@
   "weekStartsOn": 0,
   "accentColor": "#2563eb",
   "algorithm": {
-    "mode": "SMART_FAIR_V2",
+    "mode": "SMART_FAIR_V3",
     "historyWindowWeeks": 8,
     "replacementWindowWeeks": 12,
     "weights": {
-      "roleFairness": 0.45,
-      "workloadBalance": 0.25,
-      "overallRest": 0.15,
-      "futureSpacing": 0.15
+      "roleFairness": 0.35,
+      "workloadBalance": 0.35,
+      "overallRest": 0.2,
+      "futureSpacing": 0.1
     },
     "currentWeekReplacementPoints": 2,
-    "currentWeekReplacementCap": 8
+    "currentWeekReplacementCap": 8,
+    "fairnessBaselineDate": "2026-10-01"
   },
   "churchNameEn": "Westbury Church of Christ",
   "churchNameEs": "Westbury Church of Christ",
