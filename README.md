@@ -1,4 +1,4 @@
-# Westbury Church Hub V6.7.0
+# Westbury Church Hub V6.7.1
 
 **Westbury-only edition — by Exonuvia.** Single-church Azure deployment.
 
